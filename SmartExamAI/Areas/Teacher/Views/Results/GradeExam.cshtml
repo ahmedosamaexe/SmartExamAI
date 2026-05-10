@@ -1,0 +1,207 @@
+@model SmartExamAI.ViewModels.Teacher.GradeExamViewModel
+@{
+    ViewData["Title"] = "Grade Exam: " + Model.ExamTitle;
+    var progressPct = Model.TotalSubmissions > 0 ? (Model.GradedSubmissions * 100 / Model.TotalSubmissions) : 0;
+    var pendingCount = Model.TotalSubmissions - Model.GradedSubmissions;
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Results</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Grade Exam</li>
+  </ol>
+</nav>
+}
+
+
+
+
+<style>
+    .grade-top { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 22px 26px; margin-bottom: 16px; }
+    .grade-top h1 { font-size: 20px; font-weight: 600; color: var(--c-text); margin: 0 0 4px 0; }
+    .grade-top-course { font-size: 13px; color: var(--c-muted); margin-bottom: 14px; }
+
+    .progress-wrap { margin-bottom: 6px; }
+    .progress-bar-bg { width: 100%; height: 6px; background: var(--c-border); border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 6px; border-radius: 3px; background: var(--c-success); transition: width .3s; }
+    .progress-label { font-size: 12px; color: var(--c-muted); margin-top: 6px; }
+    .progress-label strong { color: var(--c-text); }
+
+    .grade-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm-primary { font-size: 12px; padding: 6px 14px; background: var(--c-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; text-decoration: none; transition: background .15s; }
+    .btn-sm-primary:hover { background: var(--c-primary-hover); color: #fff; }
+    .btn-sm-outline { font-size: 12px; padding: 6px 14px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-card); color: var(--c-text); font-weight: 500; text-decoration: none; }
+    .btn-sm-disabled { font-size: 12px; padding: 6px 14px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-page-bg); color: var(--c-muted); font-weight: 500; cursor: not-allowed; }
+
+    .card-block { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; overflow: hidden; }
+    .card-block-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--c-border); }
+    .card-block-header h2 { font-size: 15px; font-weight: 600; color: var(--c-text); margin: 0; }
+
+    .detail-table { width: 100%; border-collapse: collapse; }
+    .detail-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--c-muted); font-weight: 600; padding: 10px 18px; text-align: left; border-bottom: 1px solid var(--c-border); }
+    .detail-table td { padding: 12px 18px; font-size: 13px; color: var(--c-text); border-bottom: 1px solid var(--c-border); vertical-align: middle; }
+    .detail-table tr:last-child td { border-bottom: none; }
+    .cell-name { font-weight: 500; }
+    .cell-sub { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
+    .cell-score { font-weight: 600; }
+</style>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background: #fde8e8; color: #8b2020; border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px;">@TempData["ErrorMessage"]</div>
+}
+
+<!-- Top section -->
+<div class="grade-top">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div style="flex: 1; min-width: 250px;">
+            <h1>@Model.ExamTitle</h1>
+            <div class="grade-top-course">Course: @Model.CourseTitle</div>
+
+            @if (Model.TotalSubmissions > 0)
+            {
+                <div class="progress-wrap">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: @(progressPct)%;"></div>
+                    </div>
+                    <div class="progress-label"><strong>@Model.GradedSubmissions</strong> of <strong>@Model.TotalSubmissions</strong> submissions graded</div>
+                </div>
+            }
+        </div>
+        <div class="grade-actions">
+            <a href="@Url.Action("ViolationsMonitor", "Results", new { area = "Teacher", examId = Model.ExamId })" class="btn-sm-outline">
+                <i class="bi bi-shield-exclamation" style="margin-right: 4px;"></i>Live Monitor
+            </a>
+
+            @if (Model.AllGraded && !Model.ResultsPublished)
+            {
+                <form asp-action="PublishResults" asp-route-examId="@Model.ExamId" method="post" style="display:inline;">
+                    <button type="submit" class="btn-sm-primary" onclick="return confirm('Are you sure you want to publish results? Students will see their scores.');">Publish Results</button>
+                </form>
+            }
+            else if (!Model.ResultsPublished)
+            {
+                <span class="btn-sm-disabled" title="All submissions must be graded first">Publish Results</span>
+            }
+
+            @if (Model.ResultsPublished)
+            {
+                <a href="@Url.Action("ExportResults", "Results", new { area = "Teacher", examId = Model.ExamId })" class="btn-sm-outline">
+                    <i class="bi bi-file-earmark-excel" style="margin-right: 4px;"></i>Export
+                </a>
+                <span class="badge-success" style="display:flex;align-items:center;">Published</span>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Submissions table -->
+<div class="card-block">
+    <div class="card-block-header">
+        <h2>Submissions</h2>
+    </div>
+
+    @if (!Model.Submissions.Any())
+    {
+        <div class="empty-state">No submissions yet.</div>
+    }
+    else
+    {
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                    <th>Violations</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sub in Model.Submissions)
+                {
+                    var statusBadge = "";
+                    var statusText = "";
+                    if (sub.IsAbsent)
+                    {
+                        statusBadge = "badge-muted"; statusText = "Absent";
+                    }
+                    else if (sub.IsTerminated)
+                    {
+                        statusBadge = "badge-danger"; statusText = "Terminated";
+                    }
+                    else if (sub.SubmittedAt == null)
+                    {
+                        statusBadge = "badge-muted"; statusText = "In Progress";
+                    }
+                    else if (sub.GradingStatus == "Pending")
+                    {
+                        statusBadge = "badge-warning"; statusText = "Pending";
+                    }
+                    else
+                    {
+                        statusBadge = "badge-success"; statusText = "Graded";
+                    }
+
+                    <tr>
+                        <td>
+                            <div class="cell-name">@sub.StudentName</div>
+                            <div class="cell-sub">
+                                @if (sub.IsAbsent)
+                                {
+                                    <span>Did not start</span>
+                                }
+                                else if (sub.SubmittedAt != null)
+                                {
+                                    @sub.SubmittedAt.Value.ToLocalTime().ToString("MMM dd, HH:mm")
+                                }
+                                else
+                                {
+                                    <span>In Progress</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="cell-score">
+                            @if (sub.IsAbsent)
+                            {
+                                <span style="color: var(--c-muted);">--</span>
+                            }
+                            else if (sub.GradingStatus == "Done" || sub.TotalScore > 0)
+                            {
+                                <span>@sub.TotalScore / @sub.MaxScore</span>
+                            }
+                            else
+                            {
+                                <span style="color: var(--c-muted);">--</span>
+                            }
+                        </td>
+                        <td><span class="@statusBadge">@statusText</span></td>
+                        <td>
+                            @if (sub.IsAbsent)
+                            {
+                                <span style="color: var(--c-muted);">--</span>
+                            }
+                            else if (sub.ViolationCount > 0)
+                            {
+                                <span style="color: var(--c-danger); font-weight: 600;">@sub.ViolationCount</span>
+                            }
+                            else
+                            {
+                                <span style="color: var(--c-muted);">0</span>
+                            }
+                        </td>
+                        <td style="text-align: right;">
+                            @if (!sub.IsAbsent)
+                            {
+                                <a href="@Url.Action("GradeSubmission", "Results", new { area = "Teacher", id = sub.SubmissionId })" class="btn-sm-primary" style="font-size: 12px;">Grade</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+

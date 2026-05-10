@@ -1,0 +1,194 @@
+@model IEnumerable<SmartExamAI.Models.Course>
+@{
+    ViewData["Title"] = "My Courses";
+
+    string FormatEnrollCode(string code)
+    {
+        if (code != null && code.Length == 8)
+        {
+            return code.Substring(0, 4) + "-" + code.Substring(4);
+        }
+
+
+        return code ?? "";
+    }
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Courses</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">My Courses</li>
+  </ol>
+</nav>
+}
+
+
+<style>
+    .page-head {
+        margin-bottom: 22px;
+    }
+    .page-head h1 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin: 0 0 4px 0;
+    }
+    .page-head p {
+        font-size: 13px;
+        color: var(--c-muted);
+        margin: 0;
+    }
+
+    .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        align-items: stretch;
+    }
+    .course-card {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+    }
+    .course-card-body {
+        flex: 1;
+    }
+    .course-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin: 0;
+    }
+    .course-card-tagline {
+        font-size: 11px;
+        color: var(--c-muted);
+        margin-top: 2px;
+    }
+    .course-card-category {
+        margin-top: 8px;
+    }
+    .course-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--c-border);
+    }
+    .course-card-code {
+        font-size: 11px;
+        color: var(--c-muted);
+    }
+    .course-card-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .btn-card-details {
+        font-size: 12px;
+        padding: 4px 12px;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-card);
+        color: var(--c-text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: border-color .15s;
+    }
+    .btn-card-details:hover {
+        border-color: var(--c-primary);
+        color: var(--c-text);
+    }
+    .btn-card-delete {
+        font-size: 12px;
+        padding: 4px 10px;
+        border: 1px solid var(--c-danger);
+        border-radius: 6px;
+        background: none;
+        color: var(--c-danger);
+        cursor: pointer;
+        font-weight: 500;
+        transition: all .15s;
+    }
+    .btn-card-delete:hover {
+        background: var(--c-danger);
+        color: #fff;
+    }
+
+    .empty-create-link {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--c-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .empty-create-link:hover {
+        text-decoration: underline;
+    }
+
+    @@media (max-width: 767px) {
+        .courses-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="page-head">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>My Courses</h1>
+            <p>Manage your courses and enrolled students.</p>
+        </div>
+        <a href="@Url.Action("Create", "Courses", new { area = "Teacher" })"
+           class="btn-primary-app" style="font-size: 13px; padding: 8px 16px;">+ New Course</a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        No courses yet.
+        <br />
+        <a href="@Url.Action("Create", "Courses", new { area = "Teacher" })" class="empty-create-link">+ Create your first course</a>
+    </div>
+}
+else
+{
+    <div class="courses-grid">
+        @foreach (var course in Model)
+        {
+            <div class="course-card" style="border-left: 3.5px solid @course.Color;">
+                <div class="course-card-body">
+                    <div class="course-card-title">@course.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(course.Tagline))
+                    {
+                        <div class="course-card-tagline">@course.Tagline</div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(course.Category))
+                    {
+                        <div class="course-card-category">
+                            <span class="badge-muted">@course.Category</span>
+                        </div>
+                    }
+                </div>
+                <div class="course-card-footer">
+                    <span class="course-card-code">EnrollCode: @FormatEnrollCode(course.EnrollCode)</span>
+                    <div class="course-card-actions">
+                        <a href="@Url.Action("Details", "Courses", new { area = "Teacher", id = course.Id })"
+                           class="btn-card-details">Details</a>
+                        <form asp-action="Delete" asp-route-id="@course.Id" method="post"
+                              onsubmit="return confirm('Delete this permanently? This action cannot be undone.');"
+                              style="display:inline;">
+                            <button type="submit" class="btn-card-delete">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+

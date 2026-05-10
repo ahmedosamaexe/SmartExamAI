@@ -1,0 +1,331 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Create Account";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<style>
+    .auth-heading {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin-bottom: 6px;
+    }
+    .auth-subheading {
+        font-size: 13px;
+        color: var(--c-muted);
+        margin-bottom: 28px;
+    }
+    .field-group {
+        margin-bottom: 20px;
+    }
+    .field-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    .field-input {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--c-text);
+        background: #fff;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .field-input:focus {
+        border-color: var(--c-primary);
+        box-shadow: 0 0 0 3px rgba(106,143,106,0.12);
+    }
+    .field-input-wrap {
+        position: relative;
+    }
+    .field-input-wrap .field-input {
+        padding-right: 42px;
+    }
+    .toggle-pass-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--c-muted);
+        font-size: 16px;
+        padding: 0;
+        line-height: 1;
+    }
+    .field-error {
+        font-size: 12px;
+        color: var(--c-danger);
+        margin-top: 4px;
+        display: block;
+    }
+
+    /* ── Role card toggle ── */
+    .role-cards {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .role-card {
+        flex: 1;
+        border: 1.5px solid var(--c-border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: all .15s;
+        background: #fff;
+    }
+    .role-card:hover {
+        border-color: var(--c-primary);
+    }
+    .role-card.selected {
+        border-color: var(--c-primary);
+        background: #F0F5F0;
+    }
+    .role-card-icon {
+        font-size: 20px;
+        color: var(--c-muted);
+        margin-bottom: 4px;
+    }
+    .role-card.selected .role-card-icon {
+        color: var(--c-primary);
+    }
+    .role-card-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--c-text);
+    }
+    .role-card-sub {
+        font-size: 11px;
+        color: var(--c-muted);
+        margin-top: 2px;
+    }
+    .role-card input[type="radio"] {
+        display: none;
+    }
+
+    .error-box {
+        background: #fde8e8;
+        color: #8b2020;
+        border-radius: 7px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+    .error-box ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .error-box ul li {
+        margin-bottom: 2px;
+    }
+    .error-box ul li:last-child {
+        margin-bottom: 0;
+    }
+    .btn-auth-submit {
+        width: 100%;
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-auth-submit:hover {
+        background: var(--c-primary-hover);
+    }
+    .auth-footer-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 13px;
+        color: var(--c-muted);
+    }
+    .auth-footer-link a {
+        color: var(--c-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .auth-footer-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<h2 class="auth-heading">Create account</h2>
+<p class="auth-subheading">Fill in your details to get started</p>
+
+<form asp-action="Register" method="post">
+    <div class="field-group">
+        <label class="field-label field-required" asp-for="FullName">Full Name</label>
+        <input class="field-input" asp-for="FullName" type="text" placeholder="Your full name" autocomplete="name" />
+        <span class="field-error" asp-validation-for="FullName"></span>
+    </div>
+
+    <div class="field-group">
+        <label class="field-label field-required" asp-for="Email">Email Address</label>
+        <input class="field-input" asp-for="Email" type="email" placeholder="you@example.com" autocomplete="email" />
+        <span class="field-error" asp-validation-for="Email"></span>
+    </div>
+
+    <div class="field-group">
+        <label class="field-label">I am a...</label>
+        <div class="role-cards">
+            <div class="role-card selected" id="card-teacher" onclick="selectRole('Teacher')">
+                <i class="bi bi-person-workspace role-card-icon"></i>
+                <div class="role-card-label">Teacher</div>
+                <div class="role-card-sub">Create and manage exams</div>
+                <input type="radio" asp-for="Role" value="Teacher" id="roleTeacher" checked />
+            </div>
+            <div class="role-card" id="card-student" onclick="selectRole('Student')">
+                <i class="bi bi-mortarboard role-card-icon"></i>
+                <div class="role-card-label">Student</div>
+                <div class="role-card-sub">Join courses and take exams</div>
+                <input type="radio" asp-for="Role" value="Student" id="roleStudent" />
+            </div>
+        </div>
+    </div>
+
+    <div class="field-group" id="inviteCodeGroup">
+        <label class="field-label" asp-for="InviteCode">Invite Code</label>
+        <input class="field-input" asp-for="InviteCode" type="text" placeholder="Enter invite code" />
+        <span class="field-error" asp-validation-for="InviteCode"></span>
+    </div>
+
+    <div class="field-group">
+        <label class="field-label field-required" asp-for="Password">Password</label>
+        <div class="field-input-wrap">
+            <input class="field-input" asp-for="Password" type="password" id="passwordInput" placeholder="At least 6 characters" autocomplete="new-password" />
+            <button type="button" class="toggle-pass-btn" onclick="togglePassword()">
+                <i class="bi bi-eye" id="toggleIcon"></i>
+            </button>
+        </div>
+        <div id="strength-bar" style="height:4px;border-radius:2px;margin-top:6px;background:var(--c-border);transition:all 0.3s;">
+          <div id="strength-fill" style="height:100%;border-radius:2px;width:0%;transition:all 0.3s;"></div>
+        </div>
+        <small id="strength-label" style="color:var(--c-muted);font-size:0.78rem;"></small>
+        <span class="field-error" asp-validation-for="Password"></span>
+    </div>
+
+    <div class="field-group">
+        <label class="field-label field-required" asp-for="ConfirmPassword">Confirm Password</label>
+        <input class="field-input" asp-for="ConfirmPassword" id="confirmPasswordInput" type="password" placeholder="Repeat your password" autocomplete="new-password" />
+        <small id="match-label" style="font-size:0.78rem;"></small>
+        <span class="field-error" asp-validation-for="ConfirmPassword"></span>
+    </div>
+
+    <div asp-validation-summary="All" class="error-box" style="display:none;"></div>
+
+    <button type="submit" class="btn-auth-submit">Create Account</button>
+</form>
+
+<div class="auth-footer-link">
+    Already have an account? <a asp-action="Login" asp-controller="Account">Sign in</a>
+</div>
+
+@section Scripts {
+    <script>
+        function selectRole(role) {
+            var teacherCard = document.getElementById('card-teacher');
+            var studentCard = document.getElementById('card-student');
+            var teacherRadio = document.getElementById('roleTeacher');
+            var studentRadio = document.getElementById('roleStudent');
+            var inviteCodeGroup = document.getElementById('inviteCodeGroup');
+
+            if (role === 'Teacher') {
+                teacherCard.classList.add('selected');
+                studentCard.classList.remove('selected');
+                teacherRadio.checked = true;
+                if(inviteCodeGroup) inviteCodeGroup.style.display = 'block';
+            } else {
+                studentCard.classList.add('selected');
+                teacherCard.classList.remove('selected');
+                studentRadio.checked = true;
+                if(inviteCodeGroup) inviteCodeGroup.style.display = 'none';
+            }
+        }
+
+        function togglePassword() {
+            var input = document.getElementById('passwordInput');
+            var icon = document.getElementById('toggleIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+
+        // Show validation summary only when it has content
+        (function () {
+            var box = document.querySelector('.error-box');
+            if (box && box.querySelector('li')) {
+                box.style.display = 'block';
+            }
+            
+            var studentRadio = document.getElementById('roleStudent');
+            var inviteCodeGroup = document.getElementById('inviteCodeGroup');
+            if(studentRadio && studentRadio.checked && inviteCodeGroup) {
+                inviteCodeGroup.style.display = 'none';
+            }
+        })();
+
+        document.getElementById('passwordInput').addEventListener('input', function() {
+            var val = this.value;
+            var fill = document.getElementById('strength-fill');
+            var label = document.getElementById('strength-label');
+            
+            if (!val) { fill.style.width = '0%'; label.innerText = ''; return; }
+            
+            const hasNum = /\d/.test(val);
+            const hasUpper = /[A-Z]/.test(val);
+            const hasSym = /[^a-zA-Z0-9]/.test(val);
+            const len = val.length;
+
+            if (len >= 10 && hasUpper && hasNum && hasSym) {
+                fill.style.width = '100%'; fill.style.backgroundColor = 'var(--c-success)'; label.innerText = 'Strong';
+            } else if (len >= 8 && hasUpper && hasNum) {
+                fill.style.width = '75%'; fill.style.backgroundColor = 'var(--c-warning)'; label.innerText = 'Good';
+            } else if (len >= 6 && (hasNum || hasSym)) {
+                fill.style.width = '50%'; fill.style.backgroundColor = 'var(--c-warning)'; label.innerText = 'Fair';
+            } else {
+                fill.style.width = '25%'; fill.style.backgroundColor = 'var(--c-danger)'; label.innerText = 'Weak';
+            }
+            
+            checkMatch();
+        });
+
+        document.getElementById('confirmPasswordInput').addEventListener('input', checkMatch);
+
+        function checkMatch() {
+            var pass = document.getElementById('passwordInput').value;
+            var conf = document.getElementById('confirmPasswordInput').value;
+            var label = document.getElementById('match-label');
+            
+            if (!conf) {
+                label.innerText = '';
+                return;
+            }
+            
+            if (pass === conf) {
+                label.style.color = 'var(--c-success)';
+                label.innerText = 'Passwords match';
+            } else {
+                label.style.color = 'var(--c-danger)';
+                label.innerText = 'Passwords do not match';
+            }
+        }
+    </script>
+}

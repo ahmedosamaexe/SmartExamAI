@@ -1,0 +1,896 @@
+@model SmartExamAI.ViewModels.Student.TakeExamViewModel
+@{
+    Layout = "~/Areas/Student/Views/Shared/_ExamLayout.cshtml";
+    ViewData["Title"] = Model.ExamTitle;
+}
+
+<style>
+    /* Zone 1 - Fixed top bar */
+    .exam-topbar {
+        position: fixed;
+        top: 0;
+        left: 200px;
+        right: 0;
+        height: 54px;
+        background: var(--c-sidebar-bg);
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1.5rem;
+    }
+    .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .topbar-left i {
+        font-size: 18px;
+        color: var(--c-primary);
+    }
+    .topbar-title {
+        color: #fff;
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .topbar-course {
+        color: var(--c-sidebar-text);
+        font-size: 13px;
+    }
+    .topbar-center {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .timer {
+        color: #fff;
+        font-size: 18px;
+        font-weight: 600;
+        font-family: monospace;
+    }
+    .timer-warning {
+        color: var(--c-danger) !important;
+    }
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .progress-text {
+        color: var(--c-sidebar-text);
+        font-size: 13px;
+    }
+    .btn-submit-exam {
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-submit-exam:hover {
+        background: var(--c-primary-hover);
+    }
+
+    /* Left Panel */
+    .left-panel {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 200px;
+        background: #fff;
+        border-right: 1px solid var(--c-border);
+        padding: 16px;
+        z-index: 100;
+        overflow-y: auto;
+    }
+    .nav-header {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: var(--c-muted);
+        margin-bottom: 12px;
+    }
+    .nav-dots-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }
+    .nav-dot {
+        height: 36px;
+        line-height: 36px;
+        text-align: center;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid var(--c-border);
+        background: #fff;
+        color: var(--c-muted);
+        transition: all .15s;
+        text-decoration: none;
+        display: block;
+    }
+    .nav-dot-answered {
+        background: var(--c-primary);
+        color: #fff;
+        border-color: var(--c-primary);
+    }
+    .nav-dot-current {
+        background: var(--c-text);
+        color: #fff;
+        border-color: var(--c-text);
+    }
+    .nav-dot-flagged {
+        border-color: var(--c-warning);
+        color: var(--c-warning);
+    }
+    .nav-dot-answered.nav-dot-flagged {
+        background: var(--c-primary);
+        border-color: var(--c-warning);
+        color: #fff;
+    }
+
+    .nav-legend {
+        margin-top: 16px;
+        font-size: 11px;
+        color: var(--c-muted);
+        line-height: 1.5;
+    }
+    .legend-item { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+    .legend-icon-answered { color: var(--c-primary); }
+    .legend-icon-current { color: var(--c-text); }
+    .legend-icon-flagged { color: var(--c-warning); }
+
+    .nav-divider {
+        height: 1px;
+        background: var(--c-border);
+        margin: 16px 0;
+    }
+
+    .finish-btn {
+        width: 100%;
+        background: transparent;
+        border: 1px solid var(--c-border);
+        border-radius: 7px;
+        padding: 8px;
+        font-size: 12px;
+        color: var(--c-text);
+        margin-top: 8px;
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .finish-btn:hover {
+        background: var(--c-border);
+    }
+
+    /* Main Area */
+    .main-area {
+        margin-left: 200px;
+        padding-top: 70px;
+        padding-bottom: 80px;
+        background: var(--c-page-bg);
+        min-height: 100vh;
+    }
+    .exam-content {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 0 16px;
+    }
+
+    .question-pane {
+        display: none;
+    }
+    .q-meta-bar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        align-items: center;
+    }
+    .q-meta-left {
+        font-size: 13px;
+    }
+    .q-meta-title {
+        font-weight: 600;
+        color: var(--c-text);
+    }
+    .q-meta-marks {
+        color: var(--c-muted);
+    }
+    .btn-flag {
+        background: transparent;
+        color: var(--c-muted);
+        border: none;
+        padding: 0;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .btn-flag.flagged {
+        color: var(--c-warning);
+    }
+
+    .q-main-card {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid var(--c-border);
+        padding: 24px 28px;
+    }
+    .q-type-label {
+        font-style: italic;
+        font-size: 12px;
+        color: var(--c-muted);
+        margin-bottom: 6px;
+    }
+    .question-text {
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.6;
+        color: var(--c-text);
+        margin-bottom: 20px;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .q-divider {
+        border-top: 1px solid var(--c-border);
+        margin: 16px 0;
+    }
+    .select-one-label {
+        font-size: 12px;
+        color: var(--c-muted);
+        margin-bottom: 12px;
+    }
+
+    .option-row {
+        padding: 10px 0;
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        font-size: 14px;
+        color: var(--c-text);
+    }
+    .custom-radio {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid var(--c-border);
+        flex-shrink: 0;
+        transition: all .15s;
+        margin-top: 2px;
+    }
+    .option-row input:checked + .custom-radio {
+        border-color: var(--c-primary);
+        border-width: 5px;
+    }
+    .hidden-radio {
+        display: none;
+    }
+
+    .short-answer {
+        width: 100%;
+        min-height: 120px;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 14px;
+        resize: vertical;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .short-answer:focus {
+        border-color: var(--c-primary);
+    }
+
+    /* Bottom Nav Bar */
+    .bottom-nav-bar {
+        position: fixed;
+        left: 200px;
+        right: 0;
+        bottom: 0;
+        height: 60px;
+        background: #fff;
+        border-top: 1px solid var(--c-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        z-index: 100;
+    }
+    .btn-prev {
+        background: transparent;
+        color: var(--c-text);
+        border: none;
+        font-size: 13px;
+        cursor: pointer;
+        padding: 8px;
+    }
+    .btn-prev:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .bottom-q-status {
+        font-size: 13px;
+        color: var(--c-muted);
+    }
+    .btn-next {
+        background: var(--c-sidebar-bg);
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: 8px 18px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    /* Modals & Toasts */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        display: none;
+    }
+    .modal-card {
+        background: var(--c-card, #fff);
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 420px;
+        width: 100%;
+        text-align: center;
+    }
+    .modal-title-custom {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin-bottom: 1.5rem;
+    }
+    .submit-stats {
+        margin-bottom: 1.5rem;
+    }
+    .stat-answered {
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--c-success, #16a34a);
+        line-height: 1;
+    }
+    .stat-unanswered {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--c-warning);
+        margin-top: 8px;
+    }
+    .submit-warning {
+        font-size: 13px;
+        color: var(--c-muted);
+        margin-bottom: 1.5rem;
+    }
+    .btn-confirm-submit {
+        display: block;
+        width: 100%;
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .btn-cancel-submit {
+        display: block;
+        width: 100%;
+        border: 1px solid var(--c-border);
+        background: transparent;
+        color: var(--c-text);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: 500;
+        margin-top: 8px;
+        cursor: pointer;
+    }
+
+    #toast-container {
+        position: fixed;
+        top: 68px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .custom-toast {
+        background: var(--c-sidebar-bg);
+        color: #fff;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 13px;
+        min-width: 260px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast-warning { background: var(--c-warning); }
+    .toast-danger { background: var(--c-danger); }
+</style>
+
+<div id="toast-container"></div>
+
+<input type="hidden" id="submissionId" value="@Model.SubmissionId" />
+<input type="hidden" id="examId" value="@Model.ExamId" />
+<input type="hidden" id="violationThreshold" value="@Model.ViolationThreshold" />
+<input type="hidden" id="violationCount" value="@Model.ViolationCount" />
+@Html.AntiForgeryToken()
+
+<!-- Zone 1 -->
+<header class="exam-topbar">
+    <div class="topbar-left">
+        <i class="bi bi-mortarboard-fill"></i>
+        <div class="topbar-title" title="@Model.ExamTitle">@Model.ExamTitle</div>
+        <span style="color:var(--c-sidebar-text);">&middot;</span>
+        <div class="topbar-course">@Model.CourseTitle</div>
+    </div>
+    <div class="topbar-center" style="display:flex;align-items:center;gap:16px;">
+        <div class="timer" id="countdownTimer">00:00</div>
+        <span id="violation-counter" style="color:var(--c-danger);font-size:0.85rem;font-weight:500;">
+            Violations: <span id="violation-count">@Model.ViolationCount</span> / @Model.ViolationThreshold
+        </span>
+    </div>
+    <div class="topbar-right">
+        <div class="progress-text" id="progressText">0 / @Model.Questions.Count</div>
+        <button type="button" class="btn-submit-exam" onclick="openSubmitModal()">Submit</button>
+    </div>
+</header>
+
+<!-- Left Panel -->
+<aside class="left-panel">
+    <div class="nav-header">Quiz Navigation</div>
+    <div class="nav-dots-grid" id="navDots">
+        @for (int i = 0; i < Model.Questions.Count; i++)
+        {
+            var q = Model.Questions[i];
+            <a class="nav-dot" id="dot-@q.QuestionId" data-dot-index="@i" onclick="goToQuestion(@i)">@q.OrderIndex</a>
+        }
+    </div>
+    <div class="nav-legend">
+        <div class="legend-item"><span class="legend-icon-answered">●</span> Answered</div>
+        <div class="legend-item"><span class="legend-icon-current">●</span> Current</div>
+        <div class="legend-item"><span class="legend-icon-flagged">⚑</span> Flagged</div>
+    </div>
+    <div class="nav-divider"></div>
+    <button type="button" class="finish-btn" onclick="openSubmitModal()">Finish attempt</button>
+</aside>
+
+<!-- Main Area -->
+<div class="main-area">
+    <main class="exam-content">
+        <form id="examForm">
+            @for (int i = 0; i < Model.Questions.Count; i++)
+            {
+                var question = Model.Questions[i];
+                <div class="question-pane" id="q-@question.QuestionId" data-question-id="@question.QuestionId" data-question-type="@question.Type" style="display:none;">
+                    <div class="q-meta-bar">
+                        <div class="q-meta-left">
+                            <span class="q-meta-title">Question @(i + 1) of @Model.Questions.Count</span>
+                            <span class="q-meta-marks">&middot; @question.Marks marks</span>
+                        </div>
+                        <button type="button" class="btn-flag" id="btnFlag-@question.QuestionId" onclick="toggleFlag()">
+                            <i class="bi bi-flag"></i> <span id="flagText-@question.QuestionId">Flag</span>
+                        </button>
+                    </div>
+
+                    <div class="q-main-card">
+                        <div class="q-type-label">@(question.Type == "ShortAnswer" ? "Short Answer" : "Multiple Choice")</div>
+                        <div class="question-text">@question.Text</div>
+                        
+                        @if (question.Type == "ShortAnswer")
+                        {
+                            <textarea class="short-answer answer-input" name="answer-@question.QuestionId" data-question-id="@question.QuestionId" placeholder="Type your answer..."></textarea>
+                        }
+                        else
+                        {
+                            <div class="q-divider"></div>
+                            <div class="select-one-label">Select one:</div>
+                            foreach (var option in question.Options)
+                            {
+                                <label class="option-row" onclick="selectOption(this, '@question.QuestionId')">
+                                    <input class="hidden-radio answer-input" type="radio" name="answer-@question.QuestionId" data-question-id="@question.QuestionId" value="@option.OptionId" />
+                                    <div class="custom-radio"></div>
+                                    <div>@option.Text</div>
+                                </label>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </form>
+    </main>
+</div>
+
+<!-- Bottom Nav Bar -->
+<div class="bottom-nav-bar">
+    <button type="button" class="btn-prev" id="btnPrev" onclick="goPrev()">&larr; Previous</button>
+    <div class="bottom-q-status" id="bottomQStatus">Question 1 of @Model.Questions.Count</div>
+    <button type="button" class="btn-next" id="btnNext" onclick="goNext()">Next &rarr;</button>
+</div>
+
+<!-- Submit Modal -->
+<div class="modal-overlay" id="submitModal">
+    <div class="modal-card">
+        <div class="modal-title-custom">Submit exam?</div>
+        <div class="submit-stats">
+            <div class="stat-answered" id="modalAnsweredCount">0</div>
+            <div class="stat-unanswered" id="modalUnansweredCount" style="display:none;"></div>
+        </div>
+        <div class="submit-warning" id="modalWarningText"></div>
+        <button type="button" class="btn-confirm-submit" id="confirmSubmitButton">Submit now</button>
+        <button type="button" class="btn-cancel-submit" onclick="closeSubmitModal()">Continue answering</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // --- Question IDs in order ---
+        var questionIds = [@Html.Raw(string.Join(",", Model.Questions.Select(q => q.QuestionId)))];
+        var totalQuestions = questionIds.length;
+        var currentIndex = 0;
+        var flagged = {};
+        let remainingSeconds = @Model.TotalSeconds;
+        const timerElement = document.getElementById('countdownTimer');
+        const progressText = document.getElementById('progressText');
+        let isSubmitting = false;
+        let timerInterval;
+        let examSubmitted = false;
+
+        function token() {
+            return document.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        // --- Navigation ---
+        function showQuestion(index) {
+            questionIds.forEach(function(qid) {
+                var card = document.getElementById('q-' + qid);
+                if (card) card.style.display = 'none';
+            });
+            var targetId = questionIds[index];
+            var targetCard = document.getElementById('q-' + targetId);
+            if (targetCard) targetCard.style.display = 'block';
+
+            currentIndex = index;
+            updateNavDots();
+            updateNavButtons();
+            updateFlagButton();
+            
+            var bottomStatus = document.getElementById('bottomQStatus');
+            if (bottomStatus) {
+                bottomStatus.textContent = 'Question ' + (index + 1) + ' of ' + totalQuestions;
+            }
+        }
+
+        function updateNavDots() {
+            questionIds.forEach(function(qid, i) {
+                var dot = document.getElementById('dot-' + qid);
+                if (!dot) return;
+                
+                // reset classes
+                dot.className = 'nav-dot';
+                
+                var isAns = isAnswered(qid);
+                var isFlagged = flagged[qid];
+                var isCurr = (i === currentIndex);
+
+                if (isAns) dot.classList.add('nav-dot-answered');
+                if (isFlagged) dot.classList.add('nav-dot-flagged');
+                if (isCurr) dot.classList.add('nav-dot-current');
+            });
+        }
+
+        function updateNavButtons() {
+            var btnPrev = document.getElementById('btnPrev');
+            var btnNext = document.getElementById('btnNext');
+            
+            if (currentIndex === 0) {
+                btnPrev.disabled = true;
+            } else {
+                btnPrev.disabled = false;
+            }
+            // Button label is always Next -> now, submit is only in topbar / finish button
+            btnNext.innerHTML = 'Next &rarr;';
+        }
+
+        function updateFlagButton() {
+            var qid = questionIds[currentIndex];
+            var btnFlag = document.getElementById('btnFlag-' + qid);
+            var flagText = document.getElementById('flagText-' + qid);
+            if (!btnFlag) return;
+            if (flagged[qid]) {
+                btnFlag.classList.add('flagged');
+                btnFlag.innerHTML = '<i class="bi bi-flag-fill"></i> <span id="flagText-' + qid + '">Flag</span>';
+            } else {
+                btnFlag.classList.remove('flagged');
+                btnFlag.innerHTML = '<i class="bi bi-flag"></i> <span id="flagText-' + qid + '">Flag</span>';
+            }
+        }
+
+        function saveCurrentAnswer() {
+            var qid = questionIds[currentIndex];
+            var card = document.getElementById('q-' + qid);
+            if (!card) return;
+
+            var type = card.getAttribute('data-question-type');
+            var payload = {
+                submissionId: Number(document.getElementById('submissionId').value),
+                questionId: qid,
+                selectedOptionId: null,
+                textAnswer: null
+            };
+
+            if (type === 'ShortAnswer') {
+                var textarea = card.querySelector('textarea[data-question-id="' + qid + '"]');
+                payload.textAnswer = textarea ? textarea.value : null;
+            } else {
+                var selected = card.querySelector('input[type="radio"][data-question-id="' + qid + '"]:checked');
+                payload.selectedOptionId = selected ? Number(selected.value) : null;
+            }
+
+            // Fire-and-forget
+            var btnNext = document.getElementById('btnNext');
+            var originalText = btnNext.innerHTML;
+            btnNext.classList.add('btn-loading');
+            btnNext.innerHTML = 'Saving...';
+
+            fetch('/Student/Exam/SaveAnswer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            }).then(function() {
+                btnNext.classList.remove('btn-loading');
+                btnNext.innerHTML = originalText;
+            }).catch(function() { 
+                btnNext.classList.remove('btn-loading');
+                btnNext.innerHTML = originalText;
+            });
+        }
+
+        function goPrev() {
+            if (currentIndex <= 0) return;
+            saveCurrentAnswer();
+            showQuestion(currentIndex - 1);
+        }
+
+        function goNext() {
+            saveCurrentAnswer();
+            if (currentIndex < totalQuestions - 1) {
+                showQuestion(currentIndex + 1);
+            }
+        }
+
+        function goToQuestion(index) {
+            if (index < 0 || index >= totalQuestions) return;
+            saveCurrentAnswer();
+            showQuestion(index);
+        }
+
+        function toggleFlag() {
+            var qid = questionIds[currentIndex];
+            flagged[qid] = !flagged[qid];
+            updateFlagButton();
+            updateNavDots();
+        }
+
+        // --- Option selection ---
+        function selectOption(label, questionId) {
+            var radio = label.querySelector('input[type="radio"]');
+            radio.checked = true;
+            updateProgress();
+        }
+
+        // --- Helpers ---
+        function isAnswered(qid) {
+            var card = document.getElementById('q-' + qid);
+            if (!card) return false;
+            var type = card.getAttribute('data-question-type');
+            if (type === 'ShortAnswer') {
+                var ta = card.querySelector('textarea[data-question-id="' + qid + '"]');
+                return ta && ta.value.trim().length > 0;
+            }
+            return !!card.querySelector('input[type="radio"][data-question-id="' + qid + '"]:checked');
+        }
+
+        function answeredCount() {
+            var count = 0;
+            questionIds.forEach(function(qid) {
+                if (isAnswered(qid)) count++;
+            });
+            return count;
+        }
+
+        function updateProgress() {
+            progressText.textContent = answeredCount() + ' / ' + totalQuestions;
+            updateNavDots();
+        }
+
+        document.querySelectorAll('.answer-input').forEach(function (input) {
+            input.addEventListener('change', updateProgress);
+            input.addEventListener('input', updateProgress);
+        });
+
+        // --- Timer ---
+        function formatSeconds(seconds) {
+            var safeSeconds = Math.max(0, seconds);
+            var minutes = Math.floor(safeSeconds / 60);
+            var remainder = safeSeconds % 60;
+            return String(minutes).padStart(2, '0') + ':' + String(remainder).padStart(2, '0');
+        }
+
+        function updateTimer() {
+            timerElement.textContent = formatSeconds(remainingSeconds);
+            
+            timerElement.classList.remove('timer-warning', 'timer-danger');
+            timerElement.style.color = '';
+            timerElement.style.fontWeight = '';
+
+            if (remainingSeconds > 300) {
+                timerElement.style.color = 'var(--c-primary)';
+            } else if (remainingSeconds > 60) {
+                timerElement.classList.add('timer-warning');
+                timerElement.style.color = 'var(--c-warning)';
+            } else {
+                timerElement.classList.add('timer-danger');
+                timerElement.style.color = 'var(--c-danger)';
+                timerElement.style.fontWeight = '700';
+            }
+
+            if (remainingSeconds <= 0) {
+                window.clearInterval(timerInterval);
+                showToast('Time is up! Submitting your exam...', 'warning');
+                window.setTimeout(function () {
+                    submitExam();
+                }, 2000);
+                return;
+            }
+
+            remainingSeconds--;
+        }
+
+        // --- Submit modal ---
+        function openSubmitModal() {
+            var count = answeredCount();
+            var unanswered = totalQuestions - count;
+            document.getElementById('modalAnsweredCount').textContent = count;
+
+            var unansElem = document.getElementById('modalUnansweredCount');
+            var warnElem = document.getElementById('modalWarningText');
+
+            if (unanswered > 0) {
+                unansElem.textContent = unanswered + ' unanswered';
+                unansElem.style.display = 'block';
+                warnElem.textContent = 'Unanswered questions will receive 0 marks.';
+            } else {
+                unansElem.style.display = 'none';
+                warnElem.textContent = 'You have answered all questions.';
+            }
+
+            document.getElementById('submitModal').style.display = 'flex';
+        }
+
+        function closeSubmitModal() {
+            document.getElementById('submitModal').style.display = 'none';
+        }
+
+        function showToast(message, type, duration) {
+            var container = document.getElementById('toast-container');
+            if (!container) return;
+            var toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            if (type === 'warning') toast.classList.add('toast-warning');
+            if (type === 'danger') toast.classList.add('toast-danger');
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, duration || 4000);
+        }
+
+        function collectAnswers() {
+            var answers = [];
+            questionIds.forEach(function(qid) {
+                var card = document.getElementById('q-' + qid);
+                if (!card) return;
+                var type = card.getAttribute('data-question-type');
+                var answer = {
+                    questionId: qid,
+                    selectedOptionId: null,
+                    textAnswer: null
+                };
+                if (type === 'ShortAnswer') {
+                    var ta = card.querySelector('textarea[data-question-id="' + qid + '"]');
+                    answer.textAnswer = ta ? ta.value : null;
+                } else {
+                    var selected = card.querySelector('input[type="radio"][data-question-id="' + qid + '"]:checked');
+                    answer.selectedOptionId = selected ? Number(selected.value) : null;
+                }
+                answers.push(answer);
+            });
+            return answers;
+        }
+
+        function submitExam() {
+            if (isSubmitting) return;
+            isSubmitting = true;
+            window.examSubmitted = true; // For proctoring.js
+
+            var btnSubmit = document.getElementById('confirmSubmitButton');
+            if (btnSubmit) {
+                btnSubmit.classList.add('btn-loading');
+                btnSubmit.innerText = 'Submitting...';
+            }
+
+            var payload = {
+                submissionId: Number(document.getElementById('submissionId').value),
+                answers: collectAnswers()
+            };
+
+            fetch('/Student/Exam/Submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    window.location.href = '/Student/Exam/Result/' + data.submissionId;
+                    return;
+                }
+                isSubmitting = false;
+                window.examSubmitted = false;
+                if (btnSubmit) {
+                    btnSubmit.classList.remove('btn-loading');
+                    btnSubmit.innerText = 'Submit Exam';
+                }
+                showToast(data.message || 'Unable to submit exam.', 'danger');
+            })
+            .catch(function () {
+                isSubmitting = false;
+                window.examSubmitted = false;
+                if (btnSubmit) {
+                    btnSubmit.classList.remove('btn-loading');
+                    btnSubmit.innerText = 'Submit Exam';
+                }
+                showToast('Unable to submit exam.', 'danger');
+            });
+        }
+
+        document.getElementById('confirmSubmitButton').addEventListener('click', function () {
+            submitExam();
+        });
+
+        // --- Init ---
+        showQuestion(0);
+        updateProgress();
+        updateTimer();
+        timerInterval = window.setInterval(updateTimer, 1000);
+    </script>
+    <script src="~/js/proctoring.js"></script>
+}

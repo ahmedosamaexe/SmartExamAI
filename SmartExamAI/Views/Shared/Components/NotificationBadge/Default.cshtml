@@ -1,0 +1,11 @@
+@model int
+
+@if (Model > 0)
+{
+    <a href="@Url.Action("Index", "Dashboard", new { area = "Teacher" })" style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; text-decoration: none; margin-right: 8px;">
+        <i class="bi bi-bell" style="font-size: 18px; color: var(--c-muted);"></i>
+        <span style="position: absolute; top: 0; right: 0; background: var(--c-danger); color: white; font-size: 11px; font-weight: bold; border-radius: 50%; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1;">
+            @Model
+        </span>
+    </a>
+}

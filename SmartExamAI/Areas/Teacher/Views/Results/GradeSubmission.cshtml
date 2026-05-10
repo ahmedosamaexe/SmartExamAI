@@ -1,0 +1,245 @@
+@model SmartExamAI.ViewModels.Teacher.GradeSubmissionViewModel
+@{
+    ViewData["Title"] = "Grade Submission: " + Model.StudentName;
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Results</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Grade Submission</li>
+  </ol>
+</nav>
+}
+
+
+
+
+
+
+@Html.AntiForgeryToken()
+
+<section class="card-custom p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="fw-bold mb-1" style="font-size: 24px;">@Model.StudentName</h1>
+            <p class="text-muted mb-0">@Model.StudentEmail &bull; Submitted: @Model.SubmittedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</p>
+        </div>
+        <div class="text-end">
+            @if (Model.IsTerminated)
+            {
+                <span class="badge mb-2 d-inline-block" style="background-color: var(--c-danger); color: white;">Terminated</span>
+            }
+            <div class="fw-bold" style="font-size: 24px; color: var(--c-primary);">
+                Score: <span id="total-score">@Model.TotalScore</span> / @Model.MaxScore
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="saveToast" style="
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--c-sidebar-bg); color: #fff; border-radius: 8px;
+  padding: 10px 16px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: opacity .3s; z-index: 9999;
+  pointer-events: none;">
+  Grades saved
+</div>
+
+<div class="answers-list">
+    @for (int i = 0; i < Model.Answers.Count; i++)
+    {
+        var answer = Model.Answers[i];
+        <div class="card-custom">
+            <div class="card-header bg-white border-bottom p-4" style="border-color: var(--c-border) !important;">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div class="fw-bold" style="font-size: 18px;">
+                        <span class="text-muted me-2">Q@(answer.OrderIndex)</span>
+                        @answer.QuestionText
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge" style="background-color: #F5F4F0; color: var(--c-text); border: 1px solid var(--c-border);">@answer.QuestionType</span>
+                        <span class="badge" style="background-color: var(--c-border); color: var(--c-text);">@answer.Marks Marks</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                @if (answer.QuestionType == "ShortAnswer")
+                {
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Student's Answer</label>
+                        @if (string.IsNullOrWhiteSpace(answer.TextAnswer))
+                        {
+                            <div class="p-3 border rounded text-muted font-italic bg-light">No answer provided.</div>
+                        }
+                        else
+                        {
+                            <blockquote class="p-3 border-start rounded" style="border-left-width: 4px !important; border-left-color: var(--c-border) !important; background-color: #F5F4F0;">
+                                @answer.TextAnswer
+                            </blockquote>
+                        }
+                    </div>
+
+                    <div class="grading-form" data-answer-id="@answer.AnswerId" data-marks="@answer.Marks">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label text-muted small fw-bold text-uppercase">Score</label>
+                                <input type="number" class="form-control score-input" min="0" max="@answer.Marks" value="@answer.Score">
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label text-muted small fw-bold text-uppercase">Teacher Feedback (Optional)</label>
+                                <textarea class="form-control feedback-input" rows="2">@answer.TeacherFeedback</textarea>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Student's Selected Option</label>
+                        <div>
+                            @if (string.IsNullOrEmpty(answer.SelectedOptionText))
+                            {
+                                <span class="text-muted">No option selected.</span>
+                            }
+                            else
+                            {
+                                <span>@answer.SelectedOptionText</span>
+                                @if (answer.IsCorrect == true)
+                                {
+                                    <i class="bi bi-check-circle-fill ms-2" style="color: var(--c-success);"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle-fill ms-2" style="color: var(--c-danger);"></i>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    @if (answer.IsCorrect != true)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Correct Option</label>
+                            <div>
+                                <span class="fw-semibold">@answer.CorrectOptionText</span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mt-4 pt-3 border-top" style="border-color: var(--c-border) !important;">
+                        <span class="text-muted small fw-bold text-uppercase me-2">Auto-graded Score:</span>
+                        <span class="fw-bold" style="font-size: 18px;">@answer.Score / @answer.Marks</span>
+                        @if (answer.IsCorrect == true)
+                        {
+                            <span class="badge-success ms-2">Correct</span>
+                        }
+                        else
+                        {
+                            <span class="badge-danger ms-2">Incorrect</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        @if (i < Model.Answers.Count - 1)
+        {
+            <hr style="border: none; border-top: 1px solid var(--c-border); margin: 1.5rem 0;">
+        }
+    }
+</div>
+
+@if (Model.Answers.Any(a => a.QuestionType == "ShortAnswer"))
+{
+    <div class="text-center mt-4 mb-3">
+        <button type="button" id="bulkSaveBtn" class="btn btn-primary-app px-4 py-2 fw-semibold" style="font-size: 15px;">
+            <i class="bi bi-check-circle me-1"></i> Save All Grades
+        </button>
+    </div>
+}
+
+<div class="text-center mb-5">
+    <a href="@Url.Action("GradeExam", "Results", new { area = "Teacher", examId = Model.ExamId })" class="btn btn-light border-custom fw-semibold px-4 py-2">
+        <i class="bi bi-arrow-left me-1"></i> Back to Submissions
+    </a>
+</div>
+
+@section Scripts {
+    <script>
+        function showSaveToast(msg) {
+            var t = document.getElementById('saveToast');
+            t.textContent = msg || 'Grades saved';
+            t.style.opacity = '1';
+            setTimeout(function(){ t.style.opacity = '0'; }, 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var bulkSaveBtn = document.getElementById('bulkSaveBtn');
+            if (!bulkSaveBtn) return;
+
+            bulkSaveBtn.addEventListener('click', function () {
+                var forms = document.querySelectorAll('.grading-form');
+                var grades = [];
+                var valid = true;
+
+                forms.forEach(function (form) {
+                    var answerId = parseInt(form.getAttribute('data-answer-id'), 10);
+                    var maxMarks = parseInt(form.getAttribute('data-marks'), 10);
+                    var scoreInput = form.querySelector('.score-input');
+                    var feedbackInput = form.querySelector('.feedback-input');
+                    var score = parseInt(scoreInput.value, 10);
+
+                    if (isNaN(score) || score < 0 || score > maxMarks) {
+                        valid = false;
+                        scoreInput.style.borderColor = '#B85C5C';
+                        return;
+                    }
+                    scoreInput.style.borderColor = '';
+
+                    grades.push({
+                        AnswerId: answerId,
+                        Score: score,
+                        TeacherFeedback: feedbackInput.value
+                    });
+                });
+
+                if (!valid) {
+                    showSaveToast('Please fix invalid scores.');
+                    return;
+                }
+
+                bulkSaveBtn.disabled = true;
+
+                fetch('/Teacher/Results/BulkGradeSubmission', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        submissionId: @Model.SubmissionId,
+                        grades: grades
+                    })
+                })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    bulkSaveBtn.disabled = false;
+                    if (data.success) {
+                        document.getElementById('total-score').textContent = data.newTotalScore;
+                        showSaveToast('All grades saved');
+                    } else {
+                        showSaveToast(data.message || 'Error saving grades.');
+                    }
+                })
+                .catch(function () {
+                    bulkSaveBtn.disabled = false;
+                    showSaveToast('Network error.');
+                });
+            });
+        });
+    </script>
+}
+

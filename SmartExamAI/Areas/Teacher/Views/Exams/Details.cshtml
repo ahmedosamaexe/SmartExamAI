@@ -1,0 +1,378 @@
+@model SmartExamAI.ViewModels.Teacher.ExamDetailsViewModel
+@{
+    ViewData["Title"] = Model.Title;
+
+    var isLocked = Model.SubmissionCount > 0;
+
+    string GetStatus()
+    {
+        if (!Model.IsPublished) return "Draft";
+        return Model.Status;
+    }
+
+
+
+    string StatusBadge(string s) => s switch { "Draft" => "badge-muted", "Upcoming" => "badge-warning", "Active" => "badge-success", "Ended" => "badge-danger", _ => "badge-muted" };
+
+    string FormatDuration(int m)
+    {
+        var h = m / 60; var r = m % 60;
+        if (h > 0 && r > 0) return $"{h}h {r}min";
+        if (h > 0) return $"{h}h";
+        return $"{m}min";
+    }
+
+    string TypeBadge(string t) => t switch { "MCQ" => "badge-primary", "TrueFalse" => "badge-muted", _ => "badge-warning" };
+
+    var status = GetStatus();
+    var totalMarks = Model.Questions.Sum(q => q.Marks);
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Exams</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Exam Details</li>
+  </ol>
+</nav>
+}
+
+
+<style>
+    .exam-top { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 22px 26px; margin-bottom: 16px; }
+    .exam-top h1 { font-size: 20px; font-weight: 600; color: var(--c-text); margin: 0; display: inline; }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; }
+    .meta-item { font-size: 12px; color: var(--c-muted); }
+    .meta-item strong { color: var(--c-text); font-weight: 500; }
+    .exam-top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .card-block { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+    .card-block-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--c-border); }
+    .card-block-header h2 { font-size: 15px; font-weight: 600; color: var(--c-text); margin: 0; display: flex; align-items: center; gap: 8px; }
+
+    .detail-table { width: 100%; border-collapse: collapse; }
+    .detail-table th { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--c-muted); font-weight: 600; padding: 10px 18px; text-align: left; border-bottom: 1px solid var(--c-border); }
+    .detail-table td { padding: 12px 18px; font-size: 13px; color: var(--c-text); border-bottom: 1px solid var(--c-border); vertical-align: middle; }
+    .detail-table tr:last-child td { border-bottom: none; }
+
+    .btn-sm-primary { font-size: 12px; padding: 6px 14px; background: var(--c-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; text-decoration: none; transition: background .15s; }
+    .btn-sm-primary:hover { background: var(--c-primary-hover); color: #fff; }
+    .btn-sm-outline { font-size: 12px; padding: 6px 14px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-card); color: var(--c-text); font-weight: 500; text-decoration: none; cursor: pointer; transition: border-color .15s; }
+    .btn-sm-outline:hover { border-color: var(--c-primary); color: var(--c-text); }
+    .btn-sm-danger { font-size: 12px; padding: 6px 14px; border: 1px solid var(--c-danger); border-radius: 6px; background: none; color: var(--c-danger); cursor: pointer; font-weight: 500; transition: all .15s; }
+    .btn-sm-danger:hover { background: var(--c-danger); color: #fff; }
+    .btn-sm-warn { font-size: 12px; padding: 6px 14px; background: var(--c-warning); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+
+    .q-text-trunc { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; font-weight: 500; }
+
+    .add-q-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 8px; padding: 18px; margin: 0 18px 18px 18px; }
+    .add-q-card h3 { font-size: 14px; font-weight: 600; color: var(--c-text); margin: 0 0 12px 0; }
+    .field-label { font-size: 12px; font-weight: 600; color: var(--c-text); margin-bottom: 6px; display: block; }
+    .field-input { width: 100%; padding: 8px 12px; border: 1px solid var(--c-border); border-radius: 7px; font-size: 13px; color: var(--c-text); background: var(--c-card); }
+
+    .summary-row { display: flex; gap: 16px; padding: 14px 18px; font-size: 13px; color: var(--c-muted); border-bottom: 1px solid var(--c-border); }
+    .summary-row strong { color: var(--c-text); }
+
+    .question-option-correct { background-color: rgba(90, 138, 90, 0.12); border-color: var(--c-success) !important; }
+</style>
+
+@Html.AntiForgeryToken()
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background: #fde8e8; color: #8b2020; border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px;">@TempData["ErrorMessage"]</div>
+}
+
+<!-- Top info card -->
+<div class="exam-top">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <h1>@Model.Title</h1>
+                <span class="@StatusBadge(status)">@status</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-item">Course: <strong>@Model.CourseTitle</strong></span>
+                <span class="meta-item">Duration: <strong>@FormatDuration(Model.DurationMinutes)</strong></span>
+                <span class="meta-item">Start: <strong>@Model.StartTime.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</strong></span>
+                <span class="meta-item">Threshold: <strong>@Model.ViolationThreshold violations</strong></span>
+            </div>
+        </div>
+        <div class="exam-top-actions">
+            @if (!isLocked)
+            {
+                <a href="@Url.Action("Edit", "Exams", new { area = "Teacher", id = Model.ExamId })" class="btn-sm-outline">Edit</a>
+            }
+            <button type="button" class="btn-sm-primary" id="togglePublishButton">@(Model.IsPublished ? "Unpublish" : "Publish")</button>
+            <button type="button" class="btn-sm-danger" data-bs-toggle="modal" data-bs-target="#deleteExamModal">Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete modal -->
+<div class="modal fade" id="deleteExamModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h2 class="modal-title fw-bold" style="font-size: 18px; color: var(--c-text);">Delete Exam</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="font-size: 13px; color: var(--c-text);">
+                <p>Are you sure you want to delete <strong>@Model.Title</strong>?</p>
+                <p style="color: var(--c-danger); font-size: 12px; margin: 0;">This will delete all related submissions, violations, answers, questions, and options.</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn-sm-outline" data-bs-dismiss="modal">Cancel</button>
+                <form asp-action="Delete" asp-route-id="@Model.ExamId" method="post" style="display:inline;" onsubmit="return confirm('Delete this permanently? This action cannot be undone.');">
+                    <button type="submit" class="btn-sm-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.TotalSubmissions > 0)
+{
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+        <div style="background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 16px 18px;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--c-muted); font-weight: 600; margin-bottom: 6px;">Submissions</div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--c-primary); line-height: 1;">@Model.TotalSubmissions</div>
+        </div>
+        <div style="background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 16px 18px;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--c-muted); font-weight: 600; margin-bottom: 6px;">Average Score</div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--c-primary); line-height: 1;">@(Model.AverageScore.HasValue ? Model.AverageScore.Value.ToString("0.0") : "—")</div>
+        </div>
+        <div style="background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 16px 18px;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--c-muted); font-weight: 600; margin-bottom: 6px;">Pass Rate</div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--c-primary); line-height: 1;">@(Model.PassRate.HasValue ? Model.PassRate.Value.ToString("0.0") + "%" : "—")</div>
+        </div>
+        <div style="background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 16px 18px;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--c-muted); font-weight: 600; margin-bottom: 6px;">Terminated</div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--c-primary); line-height: 1;">@Model.TerminatedCount</div>
+        </div>
+    </div>
+}
+
+<!-- Questions section -->
+<div class="card-block">
+    <div class="card-block-header">
+        <h2>Questions <span class="badge-muted">@Model.Questions.Count</span> <span style="font-size: 13px; font-weight: 600; color: var(--c-primary); margin-left: 8px;">@totalMarks marks total</span></h2>
+    </div>
+
+    @if (isLocked)
+    {
+        <div style="padding: 12px 18px; font-size: 12px; color: var(--c-muted); background: var(--c-page-bg); border-bottom: 1px solid var(--c-border);">
+            This exam has submissions. Questions cannot be modified.
+        </div>
+    }
+
+    @if (!Model.Questions.Any())
+    {
+        <div class="empty-state">No questions added yet.</div>
+    }
+    else
+    {
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th style="width:40px;">#</th>
+                    <th>Question</th>
+                    <th>Type</th>
+                    <th>Marks</th>
+                    <th>Options</th>
+                    @if (!isLocked) { <th style="text-align:right;">Actions</th> }
+                </tr>
+            </thead>
+            <tbody id="questionsTableBody">
+                @foreach (var q in Model.Questions)
+                {
+                    var trunc = q.Text.Length > 80 ? q.Text.Substring(0, 80) + "..." : q.Text;
+                    <tr class="question-row" data-question-card="true" data-question-id="@q.Id" data-marks="@q.Marks">
+                        <td class="order-badge" style="font-weight: 600; color: var(--c-primary);">@q.OrderIndex</td>
+                        <td><span class="q-text-trunc">@trunc</span></td>
+                        <td><span class="@TypeBadge(q.Type)">@q.Type</span></td>
+                        <td style="color: var(--c-muted);">@q.Marks</td>
+                        <td style="color: var(--c-muted);">@q.Options.Count</td>
+                        @if (!isLocked)
+                        {
+                            <td style="text-align:right;">
+                                <button type="button" class="delete-question-button" data-question-id="@q.Id" style="border:none;background:none;cursor:pointer;color:var(--c-danger);">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (!isLocked)
+    {
+        <!-- Inline add question + CSV (same as existing) -->
+        <div class="add-q-card">
+            <h3>Add Question</h3>
+            <div id="questionError" style="background: #fde8e8; color: #8b2020; border-radius: 7px; padding: 10px 14px; font-size: 12px; margin-bottom: 12px; display: none;"></div>
+            <div style="margin-bottom: 10px;">
+                <label class="field-label">Question Text</label>
+                <textarea class="field-input" id="questionText" rows="3" style="resize:vertical;"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                    <label class="field-label">Type</label>
+                    <div style="display:flex;gap:8px;">
+                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="questionType" id="typeMcq" value="MCQ" checked /> MCQ</label>
+                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="questionType" id="typeTrueFalse" value="TrueFalse" /> TrueFalse</label>
+                        <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="questionType" id="typeShortAnswer" value="ShortAnswer" /> ShortAnswer</label>
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label">Marks</label>
+                    <input type="number" min="1" value="1" class="field-input" id="questionMarks" />
+                </div>
+            </div>
+            <div id="mcqOptionsSection">
+                <label class="field-label">Options (select correct)</label>
+                @for (var i = 0; i < 4; i++)
+                {
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <input type="radio" name="mcqCorrectOption" value="@i" />
+                        <input type="text" class="field-input mcq-option-input" placeholder="Option @(i+1)" />
+                    </div>
+                }
+            </div>
+            <div id="trueFalseOptionsSection" style="display:none;">
+                <label class="field-label">Correct Answer</label>
+                <div style="display:flex;gap:12px;">
+                    <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="trueFalseCorrectAnswer" id="trueAnswer" value="True" checked /> True</label>
+                    <label style="font-size:13px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="trueFalseCorrectAnswer" id="falseAnswer" value="False" /> False</label>
+                </div>
+            </div>
+            <div id="shortAnswerNote" style="display:none;margin-top:8px;padding:10px;background:var(--c-page-bg);border-radius:7px;font-size:12px;color:var(--c-muted);">
+                Short answer questions are graded manually.
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+                <button type="button" class="btn-sm-primary" id="addQuestionButton"><i class="bi bi-plus-lg" style="margin-right:4px;"></i>Add Question</button>
+            </div>
+        </div>
+        <div class="add-q-card" style="margin-top:0;">
+            <h3>CSV Import</h3>
+            <div id="importError" style="background:#fde8e8;color:#8b2020;border-radius:7px;padding:10px 14px;font-size:12px;margin-bottom:12px;display:none;"></div>
+            <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+                <input type="file" id="csvFileInput" class="field-input" accept=".csv" style="max-width:300px;" />
+                <button type="button" class="btn-sm-primary" id="importQuestionsButton">Import</button>
+                <button type="button" class="btn-sm-outline" id="downloadSampleCsvButton">Sample CSV</button>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Results section -->
+@if (Model.SubmissionCount > 0)
+{
+    <div class="card-block">
+        <div class="card-block-header">
+            <h2>Submissions <span class="badge-muted">@Model.SubmissionCount</span></h2>
+            <a href="@Url.Action("GradeExam", "Results", new { area = "Teacher", examId = Model.ExamId })" class="btn-sm-primary">Grade Exam</a>
+        </div>
+        <div class="summary-row">
+            <span><strong>@Model.SubmissionCount</strong> submitted</span>
+            @if (Model.ResultsPublished) { <span class="badge-success">Results Published</span> }
+        </div>
+        @if (Model.ResultsPublished)
+        {
+            <div style="padding: 14px 18px;">
+                <a href="@Url.Action("ExportResults", "Results", new { area = "Teacher", examId = Model.ExamId })" class="btn-sm-outline">Export Results</a>
+            </div>
+        }
+    </div>
+}
+
+<script>
+    var examId = '@Model.ExamId';
+    var isLocked = @(isLocked ? "true" : "false");
+    var publishStatusBadge = null;
+    var togglePublishButton = document.getElementById('togglePublishButton');
+
+    function token() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+    function showError(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+    function clearError(el) { el.style.display = 'none'; el.textContent = ''; }
+    function escapeHtml(v) { return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+
+    togglePublishButton.addEventListener('click', function() {
+        if (togglePublishButton.textContent.trim() === 'Unpublish' && !confirm('Unpublish this exam? Students will lose access immediately.')) return;
+        var fd = new FormData(); fd.append('__RequestVerificationToken', token());
+        fetch('/Teacher/Exams/TogglePublish/' + examId, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.success) { togglePublishButton.textContent = d.isPublished ? 'Unpublish' : 'Publish'; location.reload(); } });
+    });
+
+    function selectedQuestionType() { var s = document.querySelector('input[name="questionType"]:checked'); return s ? s.value : 'MCQ'; }
+    function updateQuestionTypeSections() {
+        if (isLocked) return;
+        var t = selectedQuestionType();
+        document.getElementById('mcqOptionsSection').style.display = t === 'MCQ' ? '' : 'none';
+        document.getElementById('trueFalseOptionsSection').style.display = t === 'TrueFalse' ? '' : 'none';
+        document.getElementById('shortAnswerNote').style.display = t === 'ShortAnswer' ? '' : 'none';
+    }
+    function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '...' : s; }
+    function normalizeQuestion(q) { return { id: q.id ?? q.Id, text: q.text ?? q.Text, type: q.type ?? q.Type, marks: q.marks ?? q.Marks, orderIndex: q.orderIndex ?? q.OrderIndex, options: q.options ?? q.Options ?? [] }; }
+    function typeBadge(t) { if (t === 'MCQ') return 'badge-primary'; if (t === 'TrueFalse') return 'badge-muted'; return 'badge-warning'; }
+
+    function renumberCards() { document.querySelectorAll('[data-question-card]').forEach(function(c, i) { var b = c.querySelector('.order-badge'); if (b) b.textContent = i + 1; }); }
+    function updateEmptyState() { /* no-op for details as table always rendered */ }
+
+    function appendQuestionCard(raw) {
+        var q = normalizeQuestion(raw);
+        var tbody = document.getElementById('questionsTableBody');
+        if (!tbody) return;
+        var tr = document.createElement('tr');
+        tr.className = 'question-row'; tr.setAttribute('data-question-card','true'); tr.setAttribute('data-question-id', q.id); tr.setAttribute('data-marks', q.marks);
+        var act = !isLocked ? '<td style="text-align:right;"><button type="button" class="delete-question-button" data-question-id="'+q.id+'" style="border:none;background:none;cursor:pointer;color:var(--c-danger);"><i class="bi bi-trash"></i></button></td>' : '';
+        tr.innerHTML = '<td class="order-badge" style="font-weight:600;color:var(--c-primary);">'+q.orderIndex+'</td><td><span class="q-text-trunc">'+escapeHtml(truncate(q.text,80))+'</span></td><td><span class="'+typeBadge(q.type)+'">'+escapeHtml(q.type)+'</span></td><td style="color:var(--c-muted);">'+q.marks+'</td><td style="color:var(--c-muted);">'+q.options.length+'</td>'+act;
+        tbody.appendChild(tr);
+        if (!isLocked) bindDeleteButton(tr.querySelector('.delete-question-button'));
+        renumberCards();
+    }
+
+    function deleteQuestion(qid, card) {
+        var qe = document.getElementById('questionError'); clearError(qe);
+        var fd = new FormData(); fd.append('__RequestVerificationToken', token());
+        fetch('/Teacher/Exams/DeleteQuestion/'+qid, { method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+            .then(function(r){return r.json();}).then(function(d){ if(!d.success){showError(qe,d.message||'Unable to delete.');return;} card.remove(); renumberCards(); });
+    }
+    function bindDeleteButton(btn) { if(!btn) return; btn.addEventListener('click', function(){ if(!confirm('Remove this question?')) return; deleteQuestion(btn.getAttribute('data-question-id'), btn.closest('[data-question-card]')); }); }
+
+    if (!isLocked) {
+        document.querySelectorAll('input[name="questionType"]').forEach(function(r){ r.addEventListener('change', updateQuestionTypeSections); });
+        document.querySelectorAll('.delete-question-button').forEach(bindDeleteButton);
+        document.getElementById('addQuestionButton').addEventListener('click', function() {
+            var qe = document.getElementById('questionError'); clearError(qe);
+            var fd = new FormData(); fd.append('__RequestVerificationToken', token()); fd.append('ExamId', examId);
+            fd.append('Text', document.getElementById('questionText').value); fd.append('Type', selectedQuestionType()); fd.append('Marks', document.getElementById('questionMarks').value);
+            document.querySelectorAll('.mcq-option-input').forEach(function(inp,i){ fd.append('Options['+i+']', inp.value); });
+            var cm = document.querySelector('input[name="mcqCorrectOption"]:checked'); if(cm) fd.append('CorrectOptionIndex', cm.value);
+            var ct = document.querySelector('input[name="trueFalseCorrectAnswer"]:checked'); if(ct) fd.append('CorrectAnswer', ct.value);
+            fetch('/Teacher/Exams/AddQuestion',{method:'POST',body:fd,headers:{'X-Requested-With':'XMLHttpRequest'}})
+                .then(function(r){return r.json();}).then(function(d){ if(!d.success){showError(qe,d.message||'Unable to add.');return;} appendQuestionCard(d.question);
+                    document.getElementById('questionText').value=''; document.getElementById('questionMarks').value='1'; document.getElementById('typeMcq').checked=true;
+                    document.querySelectorAll('.mcq-option-input').forEach(function(i){i.value='';}); document.querySelectorAll('input[name="mcqCorrectOption"]').forEach(function(i){i.checked=false;});
+                    document.getElementById('trueAnswer').checked=true; updateQuestionTypeSections(); });
+        });
+        document.getElementById('importQuestionsButton').addEventListener('click', function() {
+            var ie = document.getElementById('importError'); clearError(ie); var fi = document.getElementById('csvFileInput');
+            if(!fi.files.length){showError(ie,'Please choose a CSV file.');return;}
+            var fd = new FormData(); fd.append('__RequestVerificationToken',token()); fd.append('examId',examId); fd.append('csvFile',fi.files[0]);
+            fetch('/Teacher/Exams/ImportQuestions',{method:'POST',body:fd,headers:{'X-Requested-With':'XMLHttpRequest'}})
+                .then(function(r){return r.json();}).then(function(d){ if(!d.success){showError(ie,d.message||'Unable to import.');return;} d.questions.forEach(appendQuestionCard); fi.value=''; });
+        });
+        document.getElementById('downloadSampleCsvButton').addEventListener('click', function() {
+            var rows=['Type,QuestionText,Marks,Option1,Option2,Option3,Option4,CorrectIndex','MCQ,"Which symbol represents pi?",2,3.14,2.71,1.41,1.73,1','TrueFalse,"The earth revolves around the sun.",1,True','ShortAnswer,"Explain polymorphism in one paragraph.",5'];
+            var blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}); var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download='sample-exam-questions.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u);
+        });
+        updateQuestionTypeSections();
+    }
+    renumberCards();
+</script>
+

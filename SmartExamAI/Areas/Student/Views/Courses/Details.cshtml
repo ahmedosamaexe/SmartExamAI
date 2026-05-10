@@ -1,0 +1,136 @@
+@model SmartExamAI.ViewModels.Student.StudentCourseDetailsViewModel
+@{
+    ViewData["Title"] = Model.Title;
+
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Student/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Courses</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Course Details</li>
+  </ol>
+</nav>
+}
+
+
+
+
+<style>
+    .course-top { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 22px 26px; margin-bottom: 16px; border-left: 4px solid; }
+    .course-top h1 { font-size: 20px; font-weight: 600; color: var(--c-text); margin: 0 0 4px 0; }
+    .ct-teacher { font-size: 13px; color: var(--c-muted); margin-bottom: 8px; }
+    .ct-meta { display: flex; gap: 10px; align-items: center; }
+
+    .card-block { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; overflow: hidden; }
+    .card-block-header { padding: 14px 18px; border-bottom: 1px solid var(--c-border); font-size: 14px; font-weight: 600; color: var(--c-text); }
+
+    .exam-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; border-bottom: 1px solid var(--c-border); gap: 12px; }
+    .exam-row:last-child { border-bottom: none; }
+    .exam-row-active { background: #FFF3F0; }
+    .exam-row-upcoming { background: #F8F8F6; }
+    .exam-row-ended { background: var(--c-card); }
+    .exam-row-noresult { opacity: .7; }
+    .er-title { font-size: 13px; font-weight: 500; color: var(--c-text); }
+    .er-sub { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
+    .er-right { flex-shrink: 0; text-align: right; }
+
+    .btn-take { display: inline-block; padding: 5px 14px; background: var(--c-primary); color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none; transition: background .15s; }
+    .btn-take:hover { background: var(--c-primary-hover); color: #fff; }
+    .btn-view { display: inline-block; padding: 5px 14px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-card); font-size: 12px; font-weight: 500; color: var(--c-text); text-decoration: none; }
+    .btn-view:hover { border-color: var(--c-primary); color: var(--c-text); }
+</style>
+
+<!-- Course header -->
+<div class="course-top" style="border-left-color: @(string.IsNullOrEmpty(Model.Color) ? "var(--c-primary)" : Model.Color);">
+    <h1>@Model.Title</h1>
+    <div class="ct-teacher">@Model.TeacherName</div>
+    <div class="ct-meta">
+        @if (!string.IsNullOrWhiteSpace(Model.Category))
+        {
+            <span class="badge-muted">@Model.Category</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Tagline))
+        {
+            <span style="font-size: 12px; color: var(--c-muted);">@Model.Tagline</span>
+        }
+    </div>
+</div>
+
+<!-- Exams list -->
+<div class="card-block">
+    <div class="card-block-header">Exams (@Model.PublishedExams.Count)</div>
+
+    @if (!Model.PublishedExams.Any())
+    {
+        <div class="empty-state">No exams available for this course yet.</div>
+    }
+    else
+    {
+        @foreach (var exam in Model.PublishedExams)
+        {
+            var isActive = exam.Status == "Active";
+            var isUpcoming = exam.Status == "Upcoming";
+            var isEnded = exam.Status == "Ended";
+
+            var rowClass = "exam-row";
+            if (isActive) { rowClass += " exam-row-active"; }
+            else if (isUpcoming) { rowClass += " exam-row-upcoming"; }
+            else if (isEnded && !exam.HasResult) { rowClass += " exam-row-ended exam-row-noresult"; }
+            else { rowClass += " exam-row-ended"; }
+
+            <div class="@rowClass">
+                <div>
+                    <div class="er-title">@exam.Title</div>
+                    <div class="er-sub">
+                        @if (isActive)
+                        {
+                            var minutesLeft = (int)Math.Ceiling((exam.StartTime.AddMinutes(exam.DurationMinutes) - DateTime.UtcNow).TotalMinutes);
+                            <span>Ends in @minutesLeft minute@(minutesLeft != 1 ? "s" : "")</span>
+                        }
+                        else if (isUpcoming)
+                        {
+                            <span>Starts @exam.StartTime.ToLocalTime().ToString("MMM d") at @exam.StartTime.ToLocalTime().ToString("h:mm tt")</span>
+                        }
+                        else if (isEnded && exam.HasResult)
+                        {
+                            <span>Results published</span>
+                        }
+                        else
+                        {
+                            <span>Results not yet published</span>
+                        }
+                    </div>
+                </div>
+                <div class="er-right">
+                    @if (isActive && exam.SubmissionId == null)
+                    {
+                        <a href="@Url.Action("Rules", "Exam", new { area = "Student", examId = exam.ExamId })" class="btn-take">Take Exam</a>
+                    }
+                    else if (isActive && exam.SubmissionId != null)
+                    {
+                        <span class="badge-muted">Submitted</span>
+                    }
+                    else if (isUpcoming)
+                    {
+                        <span class="badge-warning">Upcoming</span>
+                    }
+                    else if (isEnded && exam.HasResult && exam.SubmissionId != null)
+                    {
+                        <a href="@Url.Action("Result", "Exam", new { area = "Student", submissionId = exam.SubmissionId })" class="btn-view">View Result</a>
+                    }
+                    else
+                    {
+                        <span class="badge-muted">Ended</span>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<div style="margin-top: 16px;">
+    <a href="@Url.Action("Index", "Courses", new { area = "Student" })" style="font-size: 13px; color: var(--c-primary); text-decoration: none; font-weight: 500;">Back to My Courses</a>
+</div>
+

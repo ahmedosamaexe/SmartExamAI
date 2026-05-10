@@ -1,0 +1,325 @@
+@model SmartExamAI.ViewModels.Teacher.TeacherDashboardViewModel
+@{
+    ViewData["Title"] = "Teacher Dashboard";
+}
+
+<style>
+    /* ── Stat cards ── */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        padding: 16px 18px;
+    }
+    .stat-label {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--c-muted);
+        margin-bottom: 0.25rem;
+    }
+    .stat-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--c-text);
+        line-height: 1;
+    }
+    .stat-sub {
+        font-size: 11px;
+        margin-top: 4px;
+    }
+
+    /* ── Two-column grid ── */
+    .dash-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 16px;
+    }
+
+    /* ── Card block ── */
+    .card-block {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-block-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--c-border);
+    }
+    .card-block-header h2 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin: 0;
+    }
+    .card-block-header a {
+        font-size: 12px;
+        color: var(--c-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .card-block-header a:hover {
+        text-decoration: underline;
+    }
+
+    /* ── Table rows ── */
+    .grade-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .grade-table th {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--c-muted);
+        font-weight: 600;
+        padding: 10px 18px;
+        text-align: left;
+        border-bottom: 1px solid var(--c-border);
+    }
+    .grade-table td {
+        padding: 12px 18px;
+        font-size: 13px;
+        color: var(--c-text);
+        border-bottom: 1px solid var(--c-border);
+        vertical-align: middle;
+    }
+    .grade-table tr:last-child td {
+        border-bottom: none;
+    }
+    .grade-exam-title {
+        font-weight: 500;
+    }
+    .grade-course-sub {
+        font-size: 11px;
+        color: var(--c-muted);
+        margin-top: 2px;
+    }
+
+    /* ── Upcoming list ── */
+    .upcoming-item {
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--c-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .upcoming-item:last-child {
+        border-bottom: none;
+    }
+    .upcoming-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
+    }
+    .upcoming-course {
+        font-size: 11px;
+        color: var(--c-muted);
+        margin-top: 2px;
+    }
+    .upcoming-time {
+        font-size: 12px;
+        color: var(--c-text);
+        font-weight: 500;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 991px) {
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+        .dash-grid { grid-template-columns: 1fr; }
+    }
+    @@media (max-width: 575px) {
+        .stat-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+    <div class="stat-card" style="border-left: 3px solid var(--c-muted);">
+        <div class="stat-label">Total Courses</div>
+        <div class="stat-value">@Model.TotalCourses</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid var(--c-primary);">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value">@Model.TotalStudents</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid var(--c-success);">
+        <div class="stat-label">Active Exams</div>
+        <div class="stat-value">@Model.ActiveExams</div>
+        <div class="stat-sub" style="color: var(--c-success);">right now</div>
+    </div>
+    <div class="stat-card" style="border-left: 3px solid var(--c-warning);">
+        <div class="stat-label">Needs Grading</div>
+        <div class="stat-value">@Model.PendingGrading</div>
+        <div class="stat-sub" style="color: var(--c-warning);">submissions</div>
+    </div>
+</div>
+
+<!-- Two-column grid -->
+<div class="dash-grid">
+    <!-- Left: Needs Grading -->
+    <div class="card-block card-section-warm">
+        <div class="card-block-header">
+            <h2>Needs Grading</h2>
+            <a href="/Teacher/Results">View All Results</a>
+        </div>
+        @if (!Model.NeedsGradingList.Any())
+        {
+            <div class="empty-state">No submissions need grading</div>
+        }
+        else
+        {
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th>Exam</th>
+                        <th>Course</th>
+                        <th>Student</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.NeedsGradingList)
+                    {
+                        <tr>
+                            <td>
+                                <div class="grade-exam-title">@item.ExamTitle</div>
+                                <div class="grade-course-sub">@item.CourseTitle</div>
+                            </td>
+                            <td><span class="badge-muted">@item.CourseTitle</span></td>
+                            <td style="font-weight: 500;">@item.StudentName</td>
+                            <td>
+                                <a href="/Teacher/Results/GradeSubmission/@item.SubmissionId"
+                                   style="font-size: 12px; color: var(--c-primary); text-decoration: none; font-weight: 500;">Grade</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <!-- Right: Upcoming Exams -->
+    <div class="card-block">
+        <div class="card-block-header">
+            <h2>Upcoming Exams</h2>
+        </div>
+        @if (!Model.UpcomingExams.Any())
+        {
+            <div class="empty-state">No upcoming exams</div>
+        }
+        else
+        {
+            foreach (var exam in Model.UpcomingExams)
+            {
+                <div class="upcoming-item">
+                    <div>
+                        <div class="upcoming-title">@exam.ExamTitle</div>
+                        <div class="upcoming-course">@exam.CourseTitle</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="upcoming-time">@exam.StartTime.ToLocalTime().ToString("MMM d \u00B7 h:mm tt")</div>
+                        <span class="badge-warning">Upcoming</span>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Recent Courses -->
+<div class="card-block" style="margin-top: 16px;">
+    <div class="card-block-header">
+        <h2>My Courses</h2>
+    </div>
+    <div style="padding: 18px;">
+        @{
+            var recentCourses = ViewData["RecentCourses"] as List<SmartExamAI.Models.Course> ?? new List<SmartExamAI.Models.Course>();
+            var totalCoursesCount = ViewData["TotalCoursesCount"] as int? ?? 0;
+        }
+        @if (!recentCourses.Any())
+        {
+            <div class="empty-state">No courses yet.</div>
+        }
+        else
+        {
+            <div class="courses-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
+                @foreach (var course in recentCourses)
+                {
+                    <a href="/Teacher/Courses/Details/@course.Id" style="text-decoration: none; color: inherit;">
+                        <div class="course-card" style="background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 16px 18px; border-left: 3.5px solid @(string.IsNullOrEmpty(course.Color) ? "var(--c-primary)" : course.Color); height: 100%;">
+                            <div style="font-size: 14px; font-weight: 600; color: var(--c-text); margin: 0;">@course.Title</div>
+                            @if (!string.IsNullOrWhiteSpace(course.Tagline))
+                            {
+                                <div style="font-size: 11px; color: var(--c-muted); margin-top: 2px;">@course.Tagline</div>
+                            }
+                        </div>
+                    </a>
+                }
+            </div>
+            
+            @if (totalCoursesCount > 4)
+            {
+                <div style="margin-top: 16px; text-align: center;">
+                    <a href="/Teacher/Courses" style="font-size: 13px; color: var(--c-muted); text-decoration: none;">View all courses</a>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card-block" style="margin-top: 16px;">
+    <div class="card-block-header">
+        <h2>Recent Activity</h2>
+    </div>
+    <div style="padding: 18px;">
+        @if (!Model.RecentActivity.Any())
+        {
+            <div class="empty-state">No recent activity</div>
+        }
+        else
+        {
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                @foreach (var activity in Model.RecentActivity)
+                {
+                    var timeSpan = DateTime.UtcNow - activity.OccurredAt;
+                    string timeAgo;
+                    if (timeSpan.TotalMinutes < 1) timeAgo = "Just now";
+                    else if (timeSpan.TotalMinutes < 60) timeAgo = $"{(int)timeSpan.TotalMinutes} minute" + ((int)timeSpan.TotalMinutes != 1 ? "s" : "") + " ago";
+                    else if (timeSpan.TotalHours < 24) timeAgo = $"{(int)timeSpan.TotalHours} hour" + ((int)timeSpan.TotalHours != 1 ? "s" : "") + " ago";
+                    else timeAgo = $"{(int)timeSpan.TotalDays} day" + ((int)timeSpan.TotalDays != 1 ? "s" : "") + " ago";
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--c-border);">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 500; color: var(--c-text);">@activity.StudentName</div>
+                            <div style="font-size: 12px; color: var(--c-muted); margin-top: 2px;">@activity.ExamTitle</div>
+                        </div>
+                        <div style="text-align: right;">
+                            @if (activity.Type == "Submission")
+                            {
+                                <span class="badge-success">Submitted</span>
+                            }
+                            else
+                            {
+                                <span class="badge-danger">Violation</span>
+                            }
+                            <div style="font-size: 11px; color: var(--c-muted); margin-top: 4px;">@timeAgo</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

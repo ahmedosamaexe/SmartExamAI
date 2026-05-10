@@ -1,0 +1,159 @@
+@model List<SmartExamAI.ViewModels.Student.EnrolledCourseViewModel>
+@{
+    ViewData["Title"] = "My Courses";
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Student/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Courses</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">My Courses</li>
+  </ol>
+</nav>
+}
+
+
+
+
+<style>
+    .page-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .page-top h1 { font-size: 18px; font-weight: 600; color: var(--c-text); margin: 0; }
+    .btn-primary-sm { padding: 7px 16px; background: var(--c-primary); color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .15s; }
+    .btn-primary-sm:hover { background: var(--c-primary-hover); }
+
+    /* Modal */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1050; display: none; align-items: center; justify-content: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal-box { background: var(--c-card); border-radius: 12px; padding: 28px 24px; width: 100%; max-width: 400px; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,.12); }
+    .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--c-muted); line-height: 1; }
+    .modal-title { font-size: 16px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; }
+    .modal-sub { font-size: 12px; color: var(--c-muted); margin-bottom: 16px; }
+    .modal-input { width: 100%; padding: 10px 14px; border: 1px solid var(--c-border); border-radius: 8px; font-size: 15px; letter-spacing: 2px; text-align: center; color: var(--c-text); outline: none; transition: border-color .15s; }
+    .modal-input:focus { border-color: var(--c-primary); }
+    .modal-error { font-size: 12px; color: var(--c-danger); margin-top: 8px; display: none; }
+    .modal-btn { width: 100%; margin-top: 14px; padding: 10px; background: var(--c-primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background .15s; }
+    .modal-btn:hover { background: var(--c-primary-hover); }
+    .modal-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Course grid */
+    .course-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 24px; }
+    @@media (max-width: 991px) { .course-grid { grid-template-columns: repeat(2, 1fr); } }
+    @@media (max-width: 767px) { .course-grid { grid-template-columns: 1fr; } }
+</style>
+
+@Html.AntiForgeryToken()
+
+<!-- Top bar -->
+<div class="page-top">
+    <h1>My Courses</h1>
+    <button type="button" class="btn-primary-sm" id="openEnrollModal">+ Enroll in Course</button>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div style="background: #fde8e8; color: #8b2020; border-radius: 7px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px;">@TempData["ErrorMessage"]</div>
+}
+
+@if (!Model.Any())
+{
+    <div class="empty-state" style="background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 40px;">
+        <p style="margin-bottom: 14px;">You are not enrolled in any courses yet.</p>
+        <button type="button" class="btn-primary-sm" onclick="document.getElementById('enrollBackdrop').classList.add('open');">+ Enroll in a Course</button>
+    </div>
+}
+else
+{
+    <div class="course-grid">
+        @foreach (var course in Model)
+        {
+            <div style="border: 1px solid var(--c-border); border-radius: 8px; overflow: hidden; background: var(--c-card); display: flex; flex-direction: column;">
+                <div style="height: 120px; background-color: @course.Color; padding: 20px; color: #fff;">
+                    <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px;">@course.Category</div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3;">@course.Title</h3>
+                </div>
+                <div style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
+                    <div style="font-size: 14px; color: var(--c-muted); margin-bottom: 16px;">Instructor: @course.TeacherName</div>
+                    
+                    <div style="margin-top: auto;">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+                            <span style="color: var(--c-text);">Progress</span>
+                            <span style="color: var(--c-text); font-weight: 600;">@Math.Round(course.CompletedExamsPercent)%</span>
+                        </div>
+                        <div style="height: 6px; background: var(--c-border); border-radius: 3px; overflow: hidden; margin-bottom: 16px;">
+                            <div style="height: 100%; background: var(--c-primary); width: @course.CompletedExamsPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 16px 20px; border-top: 1px solid var(--c-border); display: flex; justify-content: space-between; align-items: center; background: var(--c-page-bg);">
+                    <div>
+                        @if (course.HasActiveExam)
+                        {
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--c-success);">
+                                <span style="width: 8px; height: 8px; background: var(--c-success); border-radius: 50%; display: inline-block;"></span>
+                                Active exam
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="font-size: 12px; color: var(--c-muted);">No active exams</div>
+                        }
+                    </div>
+                    <a href="@Url.Action("Details", "Courses", new { area = "Student", id = course.CourseId })" class="btn-primary-sm" style="text-decoration: none;">Open</a>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Enroll Modal -->
+<div class="modal-backdrop" id="enrollBackdrop">
+    <div class="modal-box">
+        <button type="button" class="modal-close" id="closeEnrollModal">&times;</button>
+        <div class="modal-title">Enroll in a Course</div>
+        <div class="modal-sub">Enter the 8-character code provided by your teacher</div>
+        <input type="text" class="modal-input" id="enrollCodeInput" maxlength="9" placeholder="XXXX-XXXX" autocomplete="off" />
+        <div class="modal-error" id="enrollError"></div>
+        <button type="button" class="modal-btn" id="enrollSubmitBtn">Enroll</button>
+    </div>
+</div>
+
+<script>
+    var backdrop = document.getElementById('enrollBackdrop');
+    var codeInput = document.getElementById('enrollCodeInput');
+    var errorEl = document.getElementById('enrollError');
+    var submitBtn = document.getElementById('enrollSubmitBtn');
+
+    document.getElementById('openEnrollModal').addEventListener('click', function() { backdrop.classList.add('open'); codeInput.value = ''; errorEl.style.display = 'none'; codeInput.focus(); });
+    document.getElementById('closeEnrollModal').addEventListener('click', function() { backdrop.classList.remove('open'); });
+    backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.classList.remove('open'); });
+
+    // Auto-insert dash after 4 characters
+    codeInput.addEventListener('input', function() {
+        var raw = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (raw.length > 8) raw = raw.substring(0, 8);
+        if (raw.length > 4) { this.value = raw.substring(0, 4) + '-' + raw.substring(4); } else { this.value = raw; }
+    });
+
+    submitBtn.addEventListener('click', function() {
+        errorEl.style.display = 'none';
+        var code = codeInput.value.replace(/-/g, '').trim();
+        if (!code || code.length < 1) { errorEl.textContent = 'Please enter an enrollment code.'; errorEl.style.display = 'block'; return; }
+        submitBtn.disabled = true;
+        submitBtn.classList.add('btn-loading');
+        submitBtn.innerText = 'Enrolling...';
+        var fd = new FormData();
+        fd.append('enrollCode', code);
+        fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        fetch('/Student/Courses/Enroll', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-loading');
+                submitBtn.innerText = 'Enroll';
+                if (d.success) { window.location.reload(); } else { errorEl.textContent = d.message || 'Unable to enroll.'; errorEl.style.display = 'block'; }
+            })
+            .catch(function() { submitBtn.disabled = false; submitBtn.classList.remove('btn-loading'); submitBtn.innerText = 'Enroll'; errorEl.textContent = 'Unable to enroll. Try again.'; errorEl.style.display = 'block'; });
+    });
+</script>
+

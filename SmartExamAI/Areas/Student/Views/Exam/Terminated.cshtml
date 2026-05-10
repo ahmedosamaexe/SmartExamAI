@@ -1,0 +1,108 @@
+@model SmartExamAI.Models.Submission
+@{
+    ViewData["Title"] = "Exam Terminated";
+    var answeredCount = Model.Answers?.Count(a => a.SelectedOptionId != null || !string.IsNullOrWhiteSpace(a.TextAnswer)) ?? 0;
+    var threshold = Model.Exam?.ViolationThreshold ?? 0;
+    var timeUsed = Model.SubmittedAt.HasValue ? (Model.SubmittedAt.Value - Model.StartedAt) : TimeSpan.Zero;
+    var timeDisplay = $"{(int)timeUsed.TotalMinutes}:{timeUsed.Seconds:D2}";
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Student/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Exams</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Exam Terminated</li>
+  </ol>
+</nav>
+}
+
+
+<style>
+    .term-wrap {
+        min-height: 80vh;
+        display: flex; align-items: center; justify-content: center;
+        padding: 2rem 1rem;
+    }
+    .term-card {
+        background: var(--c-card); border: 1px solid var(--c-border); border-radius: 14px;
+        padding: 40px 36px; max-width: 480px; width: 100%; text-align: center;
+    }
+    .term-icon {
+        width: 56px; height: 56px; border-radius: 50%;
+        background: #fde8e8; display: flex; align-items: center;
+        justify-content: center; margin: 0 auto 20px;
+    }
+    .term-icon svg { width: 28px; height: 28px; }
+    .term-title {
+        font-size: 22px; font-weight: 600; color: var(--c-text);
+        margin-bottom: 8px;
+    }
+    .term-subtitle {
+        font-size: 14px; color: var(--c-muted); margin-bottom: 24px;
+        line-height: 1.6; max-width: 420px; margin-left: auto; margin-right: auto;
+    }
+
+    .term-stats {
+        display: flex; justify-content: center; gap: 24px; margin: 20px 0;
+    }
+    .term-stat { text-align: center; }
+    .term-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--c-muted); font-weight: 600; margin-bottom: 4px; }
+    .term-stat-value { font-size: 20px; font-weight: 700; line-height: 1; }
+
+    .term-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+    .term-btn {
+        display: block; width: 100%; padding: 12px;
+        background: #252527; color: #ccc; border: 1px solid #333;
+        border-radius: 10px; font-size: 14px; font-weight: 500;
+        text-decoration: none; text-align: center; cursor: pointer;
+        transition: background .15s;
+    }
+    .term-btn:hover { background: #333; color: #ddd; }
+
+    .term-note {
+        font-size: 12px; color: var(--c-muted); margin-top: 16px; line-height: 1.5;
+    }
+</style>
+
+<div class="term-wrap">
+    <div class="term-card">
+        <div class="term-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--c-danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        </div>
+
+        <div class="term-title">Exam Terminated</div>
+        <div class="term-subtitle">
+            Your exam was automatically terminated because you exceeded the maximum allowed violations. Your answers up to this point have been submitted.
+        </div>
+
+        <div class="term-stats">
+            <div class="term-stat">
+                <div class="term-stat-label">Violations</div>
+                <div class="term-stat-value" style="color: var(--c-danger);">@Model.ViolationCount / @threshold</div>
+            </div>
+            <div class="term-stat">
+                <div class="term-stat-label">Answers Submitted</div>
+                <div class="term-stat-value" style="color: var(--c-warning);">@answeredCount</div>
+            </div>
+            <div class="term-stat">
+                <div class="term-stat-label">Time Used</div>
+                <div class="term-stat-value" style="color: var(--c-muted);">@timeDisplay</div>
+            </div>
+        </div>
+
+        <div class="term-actions">
+            <a href="@Url.Action("Result", "Exam", new { area = "Student", submissionId = Model.Id })" class="term-btn">View Submission</a>
+            <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="term-btn">Back to My Courses</a>
+        </div>
+
+        <div class="term-note">
+            If you believe this was an error, please contact your teacher.
+        </div>
+    </div>
+</div>
+

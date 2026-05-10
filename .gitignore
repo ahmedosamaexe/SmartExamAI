@@ -1,0 +1,27 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.vs/
+.vs/
+
+## IDE
+.idea/
+*.swp
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Build
+publish/
+out/
+
+## Misc
+*.pyc
+__pycache__/
+fix_breadcrumbs.py
+fix_breadcrumbs_2.py
+test_script.ps1

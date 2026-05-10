@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SmartExam AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        .sb { position: fixed; top: 0; bottom: 0; left: 0; width: 240px; background: var(--c-sidebar-bg); z-index: 1000; display: flex; flex-direction: column; overflow-y: auto; transition: width 0.2s ease; }
+        .sb-brand { padding: 20px 18px 8px; }
+        .sb-brand-name { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+        .sb-brand-tag { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--c-muted); margin-top: 2px; }
+        .sb-nav { list-style: none; padding: 0 12px; margin: 10px 0 0; flex: 1; }
+        .sb-nav li { margin-bottom: 2px; }
+        .sb-nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; color: var(--c-sidebar-text); text-decoration: none; font-size: 13px; font-weight: 500; transition: background .15s, color .15s; }
+        .sb-nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
+        .sb-nav a.active { background: var(--c-sidebar-active); color: #fff; }
+        .sb-nav a i { font-size: 16px; width: 20px; text-align: center; }
+        .sb-bottom { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.08); }
+        .sb-user { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .sb-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--c-sidebar-active); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+        .sb-uname { font-size: 12px; color: #fff; font-weight: 500; line-height: 1.2; }
+        .sb-urole { font-size: 10px; color: var(--c-muted); }
+        .sb-logout { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--c-sidebar-text); font-size: 12px; padding: 7px 12px; border-radius: 7px; cursor: pointer; transition: background .15s; }
+        .sb-logout:hover { background: rgba(255,255,255,.06); color: #fff; }
+
+        .topbar { background: var(--c-card); border-bottom: 1px solid var(--c-border); padding: 14px 22px; display: flex; justify-content: space-between; align-items: center; }
+        .topbar-left { display: flex; align-items: center; gap: 8px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        .main-wrap { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left 0.2s ease; }
+        .main-content { flex: 1; overflow-y: auto; padding: 22px; background: var(--c-page-bg); }
+
+        .sb.minimized { width: 64px; }
+        .sb.minimized .sb-brand-text,
+        .sb.minimized .sb-nav-text,
+        .sb.minimized .sb-user-details,
+        .sb.minimized .sb-logout-text { display: none; }
+        .sb.minimized .sb-nav a { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sb.minimized .sb-logout { justify-content: center; }
+        .sb.minimized .sb-bottom { padding: 12px 0; display: flex; flex-direction: column; align-items: center; }
+        .sb.minimized .sb-user { margin-bottom: 10px; justify-content: center; }
+        .main-wrap.minimized { margin-left: 64px; }
+    </style>
+</head>
+<body style="background-color: var(--c-page-bg);">
+
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+
+    bool IsActive(string controller, string alsoMatch = "")
+    {
+        var match = string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase);
+        if (!match && !string.IsNullOrEmpty(alsoMatch))
+        {
+            match = string.Equals(currentController, alsoMatch, StringComparison.OrdinalIgnoreCase);
+        }
+        return match;
+    }
+
+    var fullName = User.Claims.FirstOrDefault(c => c.Type == "FullName")?.Value ?? User.Identity?.Name ?? "";
+    var role = User.IsInRole("Teacher") ? "Teacher" : "Student";
+    var initials = "";
+    if (!string.IsNullOrEmpty(fullName))
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        initials = parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : parts[0][..Math.Min(2, parts[0].Length)].ToUpper();
+    }
+}
+
+<!-- Sidebar -->
+<div class="sb" id="sidebar">
+    <div class="sb-brand" style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div class="sb-brand-text">
+            <div class="sb-brand-name">SmartExam AI</div>
+            <div class="sb-brand-tag">EXAMINATION PLATFORM</div>
+        </div>
+        <button type="button" id="sidebarToggleBtn" style="background: transparent; border: none; color: var(--c-sidebar-text); cursor: pointer; padding: 0; font-size: 16px;"><i class="bi bi-layout-sidebar"></i></button>
+    </div>
+
+    <ul class="sb-nav">
+        @if (User.IsInRole("Teacher"))
+        {
+            <li>
+                <a href="@Url.Action("Index", "Dashboard", new { area = "Teacher" })" class="@(IsActive("Dashboard") ? "active" : "")">
+                    <i class="bi bi-grid"></i> <span class="sb-nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="@Url.Action("Index", "Courses", new { area = "Teacher" })" class="@(IsActive("Courses", "Exams") || IsActive("Results") ? "active" : "")">
+                    <i class="bi bi-journal-text"></i> <span class="sb-nav-text">Courses</span>
+                </a>
+            </li>
+            <li>
+                <a href="/Account/Profile" class="@(Context.Request.Path.Value != null && Context.Request.Path.Value.Contains("Profile", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <i class="bi bi-person-circle"></i> <span class="sb-nav-text">My Account</span>
+                </a>
+            </li>
+        }
+        else if (User.IsInRole("Student"))
+        {
+            <li>
+                <a href="@Url.Action("Index", "Dashboard", new { area = "Student" })" class="@(IsActive("Dashboard") ? "active" : "")">
+                    <i class="bi bi-grid"></i> <span class="sb-nav-text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="@(IsActive("Courses") || IsActive("Exam") ? "active" : "")">
+                    <i class="bi bi-journal-text"></i> <span class="sb-nav-text">My Courses</span>
+                </a>
+            </li>
+            <li>
+                <a href="/Account/Profile" class="@(Context.Request.Path.Value != null && Context.Request.Path.Value.Contains("Profile", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                    <i class="bi bi-person-circle"></i> <span class="sb-nav-text">My Account</span>
+                </a>
+            </li>
+        }
+    </ul>
+
+    <div class="sb-bottom">
+        <div class="sb-user">
+            <div class="sb-avatar">@initials</div>
+            <div class="sb-user-details">
+                <div class="sb-uname">@fullName</div>
+                <div class="sb-urole">@role</div>
+            </div>
+        </div>
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" style="width: 100%;">
+            <button type="submit" class="sb-logout"><i class="bi bi-box-arrow-right"></i> <span class="sb-logout-text">Logout</span></button>
+        </form>
+    </div>
+</div>
+
+<!-- Main area -->
+<div class="main-wrap" id="mainWrap">
+    <div class="topbar">
+        <div class="topbar-left">
+            @RenderSection("Breadcrumb", required: false)
+        </div>
+        <div class="topbar-right">
+            @RenderSection("TopbarButtons", required: false)
+            @await Component.InvokeAsync("NotificationBadge")
+            <div style="position:relative;display:inline-block;">
+              <button id="avatar-btn" style="background:var(--c-primary);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-weight:600;font-size:0.85rem;cursor:pointer;">
+                @(User.FindFirst("FullName")?.Value?.Substring(0,1).ToUpper() ?? "U")
+              </button>
+              <div id="avatar-menu" style="display:none;position:absolute;right:0;top:44px;background:var(--c-card);border:1px solid var(--c-border);border-radius:8px;min-width:180px;box-shadow:0 4px 16px rgba(0,0,0,0.08);z-index:1000;padding:0.5rem 0;">
+                <div style="padding:0.5rem 1rem;font-size:0.8rem;color:var(--c-muted);border-bottom:1px solid var(--c-border);">@fullName</div>
+                <a href="/Account/Profile" style="display:block;padding:0.5rem 1rem;font-size:0.875rem;color:var(--c-text);text-decoration:none;">Profile</a>
+                <form method="post" action="/Account/Logout" style="margin:0;">
+                  @Html.AntiForgeryToken()
+                  <button type="submit" style="width:100%;text-align:left;padding:0.5rem 1rem;font-size:0.875rem;color:var(--c-danger);background:none;border:none;cursor:pointer;">Sign out</button>
+                </form>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        @if (TempData["Error"] != null)
+        {
+            <script>document.addEventListener('DOMContentLoaded',()=>showToast('@TempData["Error"]','danger'));</script>
+        }
+        @if (TempData["Success"] != null)
+        {
+            <script>document.addEventListener('DOMContentLoaded',()=>showToast('@TempData["Success"]','success'));</script>
+        }
+
+        @RenderBody()
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const sidebar = document.getElementById("sidebar");
+        const mainWrap = document.getElementById("mainWrap");
+        const toggleBtn = document.getElementById("sidebarToggleBtn");
+        const toggleIcon = toggleBtn.querySelector("i");
+        
+        function setSidebarState(minimized) {
+            if (minimized) {
+                sidebar.classList.add("minimized");
+                mainWrap.classList.add("minimized");
+                toggleIcon.classList.remove("bi-layout-sidebar");
+                toggleIcon.classList.add("bi-layout-sidebar-reverse");
+            } else {
+                sidebar.classList.remove("minimized");
+                mainWrap.classList.remove("minimized");
+                toggleIcon.classList.add("bi-layout-sidebar");
+                toggleIcon.classList.remove("bi-layout-sidebar-reverse");
+            }
+        }
+        
+        const isMinimized = localStorage.getItem("sidebarMinimized") === "true";
+        setSidebarState(isMinimized);
+        
+        toggleBtn.addEventListener("click", function () {
+            const willMinimize = !sidebar.classList.contains("minimized");
+            localStorage.setItem("sidebarMinimized", willMinimize);
+            setSidebarState(willMinimize);
+        });
+    });
+</script>
+@RenderSection("Scripts", required: false)
+<div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
+<script>
+function showToast(message, type = 'success') {
+  const colors = {
+    success: 'var(--c-success)',
+    danger:  'var(--c-danger)',
+    warning: 'var(--c-warning)'
+  };
+  const t = document.createElement('div');
+  t.style.cssText = `background:#fff;border-left:4px solid ${colors[type]};padding:0.75rem 1.25rem;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.1);font-size:0.875rem;min-width:260px;color:var(--c-text);`;
+  t.innerText = message;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+  document.getElementById('avatar-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const m = document.getElementById('avatar-menu');
+    m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  });
+  document.addEventListener('click', () => {
+    const menu = document.getElementById('avatar-menu');
+    if (menu) menu.style.display = 'none';
+  });
+</script>
+</body>
+</html>

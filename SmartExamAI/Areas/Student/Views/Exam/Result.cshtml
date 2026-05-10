@@ -1,0 +1,173 @@
+@model SmartExamAI.ViewModels.Student.ExamResultDetailViewModel
+@{
+    ViewData["Title"] = "Exam Result: " + Model.ExamTitle;
+    var passed = Model.Percentage >= 60;
+    var scoreColor = passed ? "var(--c-success)" : "var(--c-danger)";
+    var pctStr = Model.Percentage.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Student/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Exams</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Exam Result</li>
+  </ol>
+</nav>
+}
+
+
+
+
+<style>
+    .result-top { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 28px 30px; margin-bottom: 16px; }
+    .rt-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+    .rt-score-big { font-size: 42px; font-weight: 700; line-height: 1; }
+    .rt-score-total { font-size: 13px; color: var(--c-muted); margin-top: 4px; }
+    .rt-progress-bg { width: 100%; height: 8px; background: var(--c-border); border-radius: 4px; overflow: hidden; }
+    .rt-progress-fill { height: 8px; border-radius: 4px; transition: width .3s; }
+
+    .meta-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+    .meta-box { background: #F8F8F6; border-radius: 8px; padding: 14px; text-align: center; }
+    .meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--c-muted); font-weight: 600; margin-bottom: 4px; }
+    .meta-value { font-size: 18px; font-weight: 600; color: var(--c-text); }
+
+    .card-block { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+    .card-block-header { padding: 14px 18px; border-bottom: 1px solid var(--c-border); font-size: 14px; font-weight: 600; color: var(--c-text); }
+
+    .q-item { padding: 14px 18px; border-bottom: 1px solid var(--c-border); display: flex; gap: 14px; align-items: flex-start; }
+    .q-item:last-child { border-bottom: none; }
+    .q-indicator { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 600; color: #fff; }
+    .q-indicator-correct { background: var(--c-success); }
+    .q-indicator-wrong { background: var(--c-danger); }
+    .q-indicator-pending { background: var(--c-warning); }
+    .q-body { flex: 1; min-width: 0; }
+    .q-title { font-size: 13px; font-weight: 500; color: var(--c-text); margin-bottom: 4px; }
+    .q-answer { font-size: 12px; color: var(--c-muted); margin-bottom: 2px; }
+    .q-correct { font-size: 12px; color: var(--c-success); }
+    .q-feedback { font-size: 12px; color: var(--c-muted); font-style: italic; margin-top: 4px; }
+    .q-score { flex-shrink: 0; font-weight: 600; font-size: 13px; color: var(--c-muted); text-align: right; }
+
+    .back-link { display: inline-block; font-size: 13px; color: var(--c-primary); text-decoration: none; font-weight: 500; margin-top: 4px; }
+    .back-link:hover { text-decoration: underline; }
+
+    @@media (max-width: 767px) { .meta-row { grid-template-columns: 1fr; } }
+</style>
+
+@if (!Model.ResultsPublished && !Model.IsTerminated)
+{
+    <div style="max-width: 500px; margin: 60px auto; text-align: center;">
+        <div class="card-block" style="padding: 40px 30px;">
+            <div style="font-size: 32px; color: var(--c-warning); margin-bottom: 16px;"><i class="bi bi-hourglass-split"></i></div>
+            <div style="font-size: 18px; font-weight: 600; color: var(--c-text); margin-bottom: 8px;">Results Pending</div>
+            <div style="font-size: 13px; color: var(--c-muted); margin-bottom: 20px;">Your teacher has not published the results for this exam yet. Check back later.</div>
+            <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="back-link">Back to My Courses</a>
+        </div>
+    </div>
+}
+else
+{
+    var correctCount = Model.Answers.Count(a => a.IsCorrect == true);
+    var totalQuestions = Model.Answers.Count;
+    var timeDiff = Model.SubmittedAt > DateTime.MinValue ? (Model.SubmittedAt - DateTime.MinValue) : TimeSpan.Zero;
+
+    <!-- Top result card -->
+    <div class="result-top">
+        <div class="rt-header">
+            <div>
+                <div class="rt-score-big" style="color: @scoreColor;">@Model.TotalScore</div>
+                <div class="rt-score-total">/ @Model.MaxScore total</div>
+            </div>
+            <div style="text-align: right;">
+                @if (Model.IsTerminated)
+                {
+                    <span class="badge-danger">Terminated</span>
+                }
+                else if (passed)
+                {
+                    <span class="badge-success">Passed</span>
+                }
+                else
+                {
+                    <span class="badge-danger">Failed</span>
+                }
+                <div style="font-size: 12px; color: var(--c-muted); margin-top: 6px;">@Model.ExamTitle</div>
+                <div style="font-size: 11px; color: var(--c-muted);">@Model.CourseTitle</div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="rt-progress-bg">
+            <div class="rt-progress-fill" style="width: @(pctStr)%; background: @scoreColor;"></div>
+        </div>
+
+        <!-- Meta row -->
+        <div class="meta-row">
+            <div class="meta-box">
+                <div class="meta-label">Questions</div>
+                <div class="meta-value">@totalQuestions</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-label">Correct</div>
+                <div class="meta-value">@correctCount</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-label">Submitted</div>
+                <div class="meta-value" style="font-size: 14px;">@Model.SubmittedAt.ToLocalTime().ToString("MMM dd, HH:mm")</div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.ResultsPublished && Model.Answers.Any())
+    {
+        <!-- Question breakdown -->
+        <div class="card-block">
+            <div class="card-block-header">Question Breakdown</div>
+            @foreach (var answer in Model.Answers)
+            {
+                var indicatorClass = "q-indicator ";
+                if (answer.IsCorrect == true) { indicatorClass += "q-indicator-correct"; }
+                else if (answer.IsCorrect == false) { indicatorClass += "q-indicator-wrong"; }
+                else { indicatorClass += "q-indicator-pending"; }
+
+                <div class="q-item">
+                    <div class="@indicatorClass">@answer.OrderIndex</div>
+                    <div class="q-body">
+                        <div class="q-title">@answer.QuestionText</div>
+                        @if (answer.QuestionType == "ShortAnswer")
+                        {
+                            <div class="q-answer">Your answer: @(string.IsNullOrWhiteSpace(answer.TextAnswer) ? "No answer provided" : answer.TextAnswer)</div>
+                            @if (!string.IsNullOrWhiteSpace(answer.TeacherFeedback))
+                            {
+                                <div class="q-feedback">Feedback: @answer.TeacherFeedback</div>
+                            }
+                            @if (answer.IsCorrect == null)
+                            {
+                                <span class="badge-warning" style="margin-top: 4px; display: inline-block;">Pending grading</span>
+                            }
+                        }
+                        else
+                        {
+                            <div class="q-answer">Your answer: @(string.IsNullOrEmpty(answer.SelectedOptionText) ? "No option selected" : answer.SelectedOptionText)</div>
+                            @if (answer.ResultsPublished)
+                            {
+                                if (answer.IsCorrect == true)
+                                {
+                                    <div class="q-correct" style="margin-top: 4px; font-weight: 500;">Correct</div>
+                                }
+                                else if (!string.IsNullOrEmpty(answer.CorrectOptionText))
+                                {
+                                    <div class="q-correct" style="margin-top: 4px;">Correct answer: @answer.CorrectOptionText</div>
+                                }
+                            }
+                        }
+                    </div>
+                    <div class="q-score">@answer.Score / @answer.Marks</div>
+                </div>
+            }
+        </div>
+    }
+
+    <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="back-link">Back to My Courses</a>
+}
+

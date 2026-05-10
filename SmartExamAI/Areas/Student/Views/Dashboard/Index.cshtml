@@ -1,0 +1,149 @@
+@model SmartExamAI.ViewModels.Student.StudentDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var avgDisplay = Model.AverageScore.HasValue ? $"{Model.AverageScore.Value:0}%" : "N/A";
+    var avgColor = Model.AverageScore.HasValue && Model.AverageScore.Value >= 60 ? "var(--c-success)" : "var(--c-danger)";
+    if (!Model.AverageScore.HasValue) avgColor = "var(--c-muted)";
+    var studentName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Student";
+    var nameParts = studentName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var initials = nameParts.Length >= 2 ? $"{nameParts[0][0]}{nameParts[1][0]}".ToUpper() : (nameParts.Length > 0 ? nameParts[0][..Math.Min(2, nameParts[0].Length)].ToUpper() : "");
+}
+
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+    .stat-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 16px 18px; }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--c-muted); font-weight: 600; margin-bottom: 6px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--c-text); line-height: 1; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .card-block { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; overflow: hidden; }
+    .card-block-header { padding: 14px 18px; border-bottom: 1px solid var(--c-border); font-size: 14px; font-weight: 600; color: var(--c-text); }
+    .list-item { padding: 12px 18px; border-bottom: 1px solid var(--c-border); display: flex; justify-content: space-between; align-items: center; }
+    .list-item:last-child { border-bottom: none; }
+    .item-title { font-size: 13px; font-weight: 500; color: var(--c-text); }
+    .item-sub { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
+    .item-right { text-align: right; flex-shrink: 0; }
+
+    .link-primary { font-size: 12px; color: var(--c-primary); text-decoration: none; font-weight: 500; }
+    .link-primary:hover { text-decoration: underline; color: var(--c-primary-hover); }
+
+    .cta-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 28px; text-align: center; }
+    .cta-card p { font-size: 14px; color: var(--c-muted); margin-bottom: 14px; }
+    .btn-enroll { display: inline-block; padding: 8px 20px; background: var(--c-primary); color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer; transition: background .15s; }
+    .btn-enroll:hover { background: var(--c-primary-hover); color: #fff; }
+
+    .welcome-banner { background: var(--c-sidebar-bg); border-radius: 10px; padding: 20px 24px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; }
+    .wb-text h2 { font-size: 16px; font-weight: 600; color: #fff; margin: 0 0 4px 0; }
+    .wb-text p { font-size: 13px; color: var(--c-muted); margin: 0; }
+    .wb-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--c-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+
+    @@media (max-width: 767px) { .stat-grid { grid-template-columns: 1fr; } .two-col { grid-template-columns: 1fr; } }
+</style>
+
+<!-- Welcome banner -->
+<div class="welcome-banner">
+    <div class="wb-text">
+        <h2>Welcome back, @studentName</h2>
+        <p>Here's your academic overview.</p>
+    </div>
+    <div class="wb-avatar">@initials</div>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+    <div class="stat-card" style="border-top: 3px solid var(--c-primary);">
+        <div class="stat-label">Enrolled Courses</div>
+        <div class="stat-value">@Model.EnrolledCourses</div>
+    </div>
+    <div class="stat-card" style="border-top: 3px solid #7A9E9F;">
+        <div class="stat-label">Completed Exams</div>
+        <div class="stat-value">@Model.CompletedExams</div>
+    </div>
+    <div class="stat-card" style="border-top: 3px solid var(--c-warning);">
+        <div class="stat-label">Average Score</div>
+        <div class="stat-value" style="color: @avgColor;">@avgDisplay</div>
+    </div>
+</div>
+
+<!-- Two-column grid -->
+<div class="two-col">
+    <!-- Upcoming Exams -->
+    <div class="card-block card-section-alt">
+        <div class="card-block-header">Upcoming Exams</div>
+        @if (!Model.UpcomingExams.Any())
+        {
+            <div class="empty-state">No upcoming exams</div>
+        }
+        else
+        {
+            @foreach (var exam in Model.UpcomingExams)
+            {
+                <div class="list-item">
+                    <div>
+                        <div class="item-title">@exam.ExamTitle</div>
+                        <div class="item-sub">@exam.CourseTitle</div>
+                    </div>
+                    <div class="item-right">
+                        <div style="font-size: 12px; color: var(--c-warning); font-weight: 500; margin-bottom: 4px;" data-countdown="@exam.StartTime.ToString("o")"></div>
+                        <span class="badge-warning">Upcoming</span>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Recent Results -->
+    <div class="card-block card-section-warm">
+        <div class="card-block-header">Recent Results</div>
+        @if (!Model.RecentResults.Any())
+        {
+            <div class="empty-state">No results yet</div>
+        }
+        else
+        {
+            @foreach (var result in Model.RecentResults)
+            {
+                var passed = result.MaxScore > 0 && ((double)result.TotalScore / result.MaxScore * 100) >= 60;
+                var scoreColor = passed ? "var(--c-success)" : "var(--c-danger)";
+                <div class="list-item">
+                    <div>
+                        <div class="item-title">@result.ExamTitle</div>
+                        <div class="item-sub">@result.CourseTitle</div>
+                    </div>
+                    <div class="item-right">
+                        <div style="font-weight: 600; color: @scoreColor; margin-bottom: 4px;">@result.TotalScore / @result.MaxScore</div>
+                        <a href="@Url.Action("Result", "Exam", new { area = "Student", submissionId = result.SubmissionId })" class="link-primary">View Result</a>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@if (Model.EnrolledCourses == 0)
+{
+    <div class="cta-card">
+        <p>You are not enrolled in any courses yet.</p>
+        <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="btn-enroll">+ Enroll in a Course</a>
+    </div>
+}
+
+<script>
+    function updateCountdowns() {
+        var now = Date.now();
+        document.querySelectorAll('[data-countdown]').forEach(function(el) {
+            var target = new Date(el.getAttribute('data-countdown')).getTime();
+            var diff = target - now;
+            if (diff <= 0) {
+                el.textContent = "Starting now";
+                el.removeAttribute('data-countdown');
+            } else {
+                var hours = Math.floor(diff / (1000 * 60 * 60));
+                var mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                el.textContent = "Starts in " + hours + "h " + mins + "m";
+            }
+        });
+    }
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
+</script>

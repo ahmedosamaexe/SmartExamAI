@@ -1,0 +1,224 @@
+@{
+    ViewData["Title"] = "My Account";
+    var fullName = ViewBag.FullName as string ?? "";
+    var email = ViewBag.Email as string ?? "";
+    var role = ViewBag.Role as string ?? "Student";
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Student/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Account</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Profile</li>
+  </ol>
+</nav>
+}
+
+
+
+
+<style>
+    .profile-card {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        padding: 24px 28px;
+        max-width: 600px;
+    }
+    .profile-section-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin-bottom: 16px;
+    }
+    .info-group {
+        margin-bottom: 14px;
+    }
+    .info-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--c-muted);
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .info-value {
+        background: #F8F8F6;
+        padding: 10px 13px;
+        border-radius: 7px;
+        font-size: 13px;
+        color: var(--c-text);
+    }
+    .info-note {
+        font-size: 11px;
+        color: var(--c-muted);
+        margin-top: 4px;
+    }
+    .form-label-profile {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--c-text);
+        margin-bottom: 6px;
+        display: block;
+    }
+    .input-wrap {
+        margin-bottom: 1.25rem;
+    }
+    .password-wrap {
+        position: relative;
+    }
+    .toggle-pw {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--c-muted);
+        cursor: pointer;
+        font-size: 15px;
+        padding: 0;
+    }
+    .form-control-profile {
+        width: 100%;
+        padding: 10px 14px;
+        padding-right: 40px;
+        font-size: 14px;
+        color: var(--c-text);
+        background: #fff;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .form-control-profile:focus {
+        border-color: var(--c-primary);
+        box-shadow: 0 0 0 3px rgba(106,143,106,0.12);
+    }
+    .btn-update {
+        padding: 10px 24px;
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-update:hover {
+        background: var(--c-primary-hover);
+    }
+    .msg-success {
+        background: #e8f5e8;
+        color: #1a5c1a;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 14px;
+    }
+    .msg-error {
+        background: #fde8e8;
+        color: #8b2020;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 14px;
+    }
+</style>
+
+<h1 style="font-size: 22px; font-weight: 600; color: var(--c-text); margin-bottom: 20px;">My Account</h1>
+
+<!-- Section 1: Personal Info -->
+<div class="profile-card">
+    <div class="profile-section-title">Personal Information</div>
+    @if (TempData["NameSuccess"] != null)
+    {
+        <div class="msg-success">@TempData["NameSuccess"]</div>
+    }
+    @if (TempData["NameError"] != null)
+    {
+        <div class="msg-error">@TempData["NameError"]</div>
+    }
+    <div class="info-group">
+        <div class="info-label">Full Name</div>
+        <form asp-controller="Account" asp-action="UpdateName" method="post" style="display: flex; gap: 8px;">
+            <input type="text" name="FullName" class="form-control-profile" style="flex: 1; padding: 8px 12px;" value="@fullName" required />
+            <button type="submit" class="btn-update" style="padding: 8px 16px;">Save Name</button>
+        </form>
+    </div>
+    <div class="info-group">
+        <div class="info-label">Email</div>
+        <div class="info-value">@email</div>
+    </div>
+    <div class="info-group">
+        <div class="info-label">Role</div>
+        <div>
+            @if (role == "Teacher")
+            {
+                <span class="badge-primary">Teacher</span>
+            }
+            else
+            {
+                <span class="badge-muted">Student</span>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: Change Password -->
+<div class="profile-card" style="margin-top: 16px;">
+    <div class="profile-section-title">Change Password</div>
+
+    @if (TempData["PasswordSuccess"] != null)
+    {
+        <div class="msg-success">@TempData["PasswordSuccess"]</div>
+    }
+    @if (TempData["PasswordError"] != null)
+    {
+        <div class="msg-error">@TempData["PasswordError"]</div>
+    }
+
+    <form asp-controller="Account" asp-action="ChangePasswordPost" method="post">
+        <div class="input-wrap">
+            <label class="form-label-profile">Current Password</label>
+            <div class="password-wrap">
+                <input class="form-control-profile" type="password" name="CurrentPassword" id="pw1" required autocomplete="current-password" />
+                <button type="button" class="toggle-pw" onclick="togglePw('pw1', this)"><i class="bi bi-eye"></i></button>
+            </div>
+        </div>
+        <div class="input-wrap">
+            <label class="form-label-profile">New Password</label>
+            <div class="password-wrap">
+                <input class="form-control-profile" type="password" name="NewPassword" id="pw2" required minlength="6" autocomplete="new-password" />
+                <button type="button" class="toggle-pw" onclick="togglePw('pw2', this)"><i class="bi bi-eye"></i></button>
+            </div>
+        </div>
+        <div class="input-wrap">
+            <label class="form-label-profile">Confirm New Password</label>
+            <div class="password-wrap">
+                <input class="form-control-profile" type="password" name="ConfirmNewPassword" id="pw3" required minlength="6" autocomplete="new-password" />
+                <button type="button" class="toggle-pw" onclick="togglePw('pw3', this)"><i class="bi bi-eye"></i></button>
+            </div>
+        </div>
+        <button type="submit" class="btn-update">Update Password</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePw(inputId, btn) {
+            var input = document.getElementById(inputId);
+            var icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+    </script>
+}
+

@@ -1,0 +1,163 @@
+@model SmartExamAI.ViewModels.Teacher.CreateCourseViewModel
+@{
+    ViewData["Title"] = "Create Course";
+
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Courses</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Create Course</li>
+  </ol>
+</nav>
+}
+
+
+
+
+
+
+<h1 class="text-heading mb-4" style="font-size: 24px; font-weight: 700;">Create Course</h1>
+
+<div class="card-custom p-0 overflow-hidden">
+    <ul class="nav nav-tabs nav-fill border-bottom" id="createCourseTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold py-3" id="step1-tab" data-bs-toggle="tab" data-bs-target="#step1" type="button" role="tab" aria-controls="step1" aria-selected="true">Step 1 - Basic Info</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold py-3" id="step3-tab" data-bs-toggle="tab" data-bs-target="#step3" type="button" role="tab" aria-controls="step3" aria-selected="false" disabled>Step 2 - Enroll Students</button>
+        </li>
+    </ul>
+
+    <div class="card-body p-4 p-md-5">
+        <form id="createCourseForm" asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+            <div class="tab-content" id="createCourseTabContent">
+                <div class="tab-pane fade show active" id="step1" role="tabpanel" aria-labelledby="step1-tab" tabindex="0">
+                    <h2 class="mb-4 fw-bold" style="font-size: 18px;">Basic Info</h2>
+                    <div id="step1Error" class="alert alert-danger d-none py-2 small fw-semibold"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-semibold field-required">Title</label>
+                        <input asp-for="Title" class="form-control bg-light" id="inputTitle" placeholder="Introduction to Physics" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="EnrollCode" class="form-label fw-semibold field-required">Enroll Code</label>
+                        <input asp-for="EnrollCode" class="form-control bg-light font-monospace" id="inputEnrollCode" placeholder="e.g. A1B2C3" />
+                        <span asp-validation-for="EnrollCode" class="text-danger small"></span>
+                    </div>
+
+
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label fw-semibold">Description <span style="font-weight:400;color:var(--c-muted);font-size:12px;">(optional)</span></label>
+                        <textarea asp-for="Description" class="form-control bg-light" rows="5" placeholder="Course details"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-primary-custom px-4" data-next-step="3">Next <i class="bi bi-arrow-right ms-1"></i></button>
+                    </div>
+                </div>
+
+
+                <div class="tab-pane fade" id="step3" role="tabpanel" aria-labelledby="step3-tab" tabindex="0">
+                    <h2 class="mb-4 fw-bold" style="font-size: 18px;">Enroll Students (optional)</h2>
+
+                    <div class="mb-4 p-3 rounded border" style="background-color: #F5F4F0; border-color: var(--c-border) !important;">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-info-circle" style="color: var(--c-primary);"></i>
+                            <div>
+                                <p class="mb-2">CSV format: two columns - FullName, Email. First row must be a header row.</p>
+                                <a href="#" id="downloadSampleCsv" class="fw-semibold text-decoration-none"><i class="bi bi-download me-1"></i> Download sample CSV</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label asp-for="CsvFile" class="form-label fw-semibold">CSV upload</label>
+                        <input asp-for="CsvFile" type="file" class="form-control bg-light" accept=".csv" />
+                    </div>
+
+                    <div class="d-flex justify-content-between border-top pt-4">
+                        <button type="button" class="btn btn-light border-custom px-4" data-prev-step="1"><i class="bi bi-arrow-left me-1"></i> Back</button>
+                        <button type="submit" class="btn btn-primary-custom px-4"><i class="bi bi-check-lg me-1"></i> Create Course</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const tabs = {
+            1: document.getElementById('step1-tab'),
+            2: document.getElementById('step2-tab'),
+            3: document.getElementById('step3-tab')
+        };
+
+        const titleInput = document.getElementById('inputTitle');
+        const step1Error = document.getElementById('step1Error');
+
+        function showStep(step) {
+            tabs[step].removeAttribute('disabled');
+            bootstrap.Tab.getOrCreateInstance(tabs[step]).show();
+        }
+
+        function validateStep1() {
+            const title = titleInput.value.trim();
+            if (!title) {
+                step1Error.textContent = 'Title is required.';
+                step1Error.classList.remove('d-none');
+                return false;
+            }
+
+            step1Error.classList.add('d-none');
+            return true;
+        }
+
+
+
+        document.querySelectorAll('[data-next-step]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const nextStep = Number(button.getAttribute('data-next-step'));
+                if (nextStep === 2 && !validateStep1()) {
+                    return;
+                }
+
+                showStep(nextStep);
+            });
+        });
+
+        document.querySelectorAll('[data-prev-step]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                showStep(Number(button.getAttribute('data-prev-step')));
+            });
+        });
+
+
+
+        document.getElementById('downloadSampleCsv').addEventListener('click', function (event) {
+            event.preventDefault();
+            const csvContent = 'FullName,Email\nJohn Doe,john@example.com\nJane Smith,jane@example.com';
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'sample-students.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+
+
+    </script>
+}
+
