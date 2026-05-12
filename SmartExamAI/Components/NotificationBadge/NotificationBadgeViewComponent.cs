@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartExamAI.Data;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace SmartExamAI.Components.NotificationBadge
 {
@@ -18,28 +16,16 @@ namespace SmartExamAI.Components.NotificationBadge
 
         public async Task<IViewComponentResult> InvokeAsync()
         {
-            if (!UserClaimsPrincipal.IsInRole("Teacher"))
+            var userId = UserClaimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
             {
                 return Content("");
             }
 
-            var teacherId = UserClaimsPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(teacherId))
-            {
-                return Content("");
-            }
+            var unreadCount = await _context.Notifications
+                .CountAsync(n => n.UserId == userId && !n.IsRead);
 
-            var count = await _context.Submissions
-                .Where(s => s.SubmittedAt != null 
-                         && !s.IsTerminated 
-                         && !s.Exam.ResultsPublished
-                         && s.Exam.Course.TeacherId == teacherId)
-                .Where(s => s.Answers.Any(a => a.Question.Type == "ShortAnswer" && a.IsCorrect == null))
-                .Select(s => s.Id)
-                .Distinct()
-                .CountAsync();
-
-            return View(count);
+            return View(unreadCount);
         }
     }
 }

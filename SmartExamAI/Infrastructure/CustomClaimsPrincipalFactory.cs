@@ -20,13 +20,6 @@ namespace SmartExamAI.Infrastructure
         {
             var identity = await base.GenerateClaimsAsync(user);
             identity.AddClaim(new Claim("FullName", user.FullName));
-            
-            var isDefaultPassword = await UserManager.CheckPasswordAsync(user, "Pass1234");
-            if (isDefaultPassword)
-            {
-                identity.AddClaim(new Claim("MustChangePassword", "true"));
-            }
-
             return identity;
         }
     }

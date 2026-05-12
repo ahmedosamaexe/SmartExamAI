@@ -34,11 +34,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+builder.Services.AddScoped<SmartExamAI.Services.NotificationService>();
+
 // ── MVC ──
-builder.Services.AddControllersWithViews(options =>
-{
-    options.Filters.Add<SmartExamAI.Filters.ForcePasswordChangeFilter>();
-});
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 

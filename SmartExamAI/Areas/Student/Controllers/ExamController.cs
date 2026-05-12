@@ -313,7 +313,6 @@ namespace SmartExamAI.Areas.Student.Controllers
             }
 
             var submission = await _context.Submissions
-                .Include(s => s.Exam)
                 .FirstOrDefaultAsync(s => s.Id == model.SubmissionId);
 
             if (submission == null)
@@ -341,21 +340,12 @@ namespace SmartExamAI.Areas.Student.Controllers
             _context.Violations.Add(violation);
             submission.ViolationCount++;
 
-            bool terminated = false;
-            if (submission.ViolationCount >= submission.Exam.ViolationThreshold)
-            {
-                submission.IsTerminated = true;
-                submission.SubmittedAt = DateTime.UtcNow;
-                terminated = true;
-            }
-
             await _context.SaveChangesAsync();
 
             return Json(new
             {
                 success = true,
-                violationCount = submission.ViolationCount,
-                isTerminated = terminated
+                violationCount = submission.ViolationCount
             });
         }
 

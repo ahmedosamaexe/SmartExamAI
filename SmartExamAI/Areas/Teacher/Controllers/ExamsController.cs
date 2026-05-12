@@ -20,11 +20,13 @@ namespace SmartExamAI.Areas.Teacher.Controllers
 
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SmartExamAI.Services.NotificationService _notificationService;
 
-        public ExamsController(AppDbContext context, UserManager<ApplicationUser> userManager)
+        public ExamsController(AppDbContext context, UserManager<ApplicationUser> userManager, SmartExamAI.Services.NotificationService notificationService)
         {
             _context = context;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         [HttpGet("Create")]
@@ -258,57 +260,8 @@ namespace SmartExamAI.Areas.Teacher.Controllers
 
             var courseId = exam.CourseId;
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-
-            var submissionIds = await _context.Submissions
-                .Where(s => s.ExamId == exam.Id)
-                .Select(s => s.Id)
-                .ToListAsync();
-
-            if (submissionIds.Count > 0)
-            {
-                var answers = await _context.Answers
-                    .Where(a => submissionIds.Contains(a.SubmissionId))
-                    .ToListAsync();
-                _context.Answers.RemoveRange(answers);
-                await _context.SaveChangesAsync();
-
-                var violations = await _context.Violations
-                    .Where(v => submissionIds.Contains(v.SubmissionId))
-                    .ToListAsync();
-                _context.Violations.RemoveRange(violations);
-                await _context.SaveChangesAsync();
-
-                var submissions = await _context.Submissions
-                    .Where(s => submissionIds.Contains(s.Id))
-                    .ToListAsync();
-                _context.Submissions.RemoveRange(submissions);
-                await _context.SaveChangesAsync();
-            }
-
-            var questionIds = await _context.Questions
-                .Where(q => q.ExamId == exam.Id)
-                .Select(q => q.Id)
-                .ToListAsync();
-
-            if (questionIds.Count > 0)
-            {
-                var options = await _context.QuestionOptions
-                    .Where(o => questionIds.Contains(o.QuestionId))
-                    .ToListAsync();
-                _context.QuestionOptions.RemoveRange(options);
-                await _context.SaveChangesAsync();
-
-                var questions = await _context.Questions
-                    .Where(q => questionIds.Contains(q.Id))
-                    .ToListAsync();
-                _context.Questions.RemoveRange(questions);
-                await _context.SaveChangesAsync();
-            }
-
             _context.Exams.Remove(exam);
             await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
 
             TempData["Success"] = "Exam deleted successfully.";
             return RedirectToAction("Details", "Courses", new { area = "Teacher", id = courseId });
@@ -319,6 +272,7 @@ namespace SmartExamAI.Areas.Teacher.Controllers
         public async Task<IActionResult> TogglePublish(int id)
         {
             var exam = await GetOwnedExamQuery()
+                .Include(e => e.Course)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             if (exam == null)
@@ -328,6 +282,26 @@ namespace SmartExamAI.Areas.Teacher.Controllers
 
             exam.IsPublished = !exam.IsPublished;
             await _context.SaveChangesAsync();
+
+            // Notify enrolled students when exam is published
+            if (exam.IsPublished)
+            {
+                var studentIds = await _context.Enrollments
+                    .Where(e => e.CourseId == exam.CourseId)
+                    .Select(e => e.StudentId)
+                    .ToListAsync();
+
+                if (studentIds.Count > 0)
+                {
+                    await _notificationService.NotifyManyAsync(
+                        studentIds,
+                        "New Exam Available",
+                        $"{exam.Title} in {exam.Course.Title} is now available.",
+                        "ExamPublished",
+                        $"/Student/Exam/Rules/{exam.Id}"
+                    );
+                }
+            }
 
             TempData["Success"] = exam.IsPublished ? "Exam is now live for students." : "Exam unpublished successfully.";
             return Json(new { success = true, isPublished = exam.IsPublished });

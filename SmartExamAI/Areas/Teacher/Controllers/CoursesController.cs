@@ -15,19 +15,21 @@ namespace SmartExamAI.Areas.Teacher.Controllers
     [Route("Teacher/[controller]")]
     public class CoursesController : Controller
     {
-        private const string DefaultStudentPassword = "Pass1234";
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IConfiguration _configuration;
 
         public CoursesController(
             AppDbContext context,
             UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager,
+            IConfiguration configuration)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
+            _configuration = configuration;
         }
 
         [HttpGet("")]
@@ -226,79 +228,8 @@ namespace SmartExamAI.Areas.Teacher.Controllers
                 return NotFound();
             }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-
-            var examIds = await _context.Exams
-                .Where(e => e.CourseId == course.Id)
-                .Select(e => e.Id)
-                .ToListAsync();
-
-            foreach (var examId in examIds)
-            {
-                var submissionIds = await _context.Submissions
-                    .Where(s => s.ExamId == examId)
-                    .Select(s => s.Id)
-                    .ToListAsync();
-
-                if (submissionIds.Count > 0)
-                {
-                    var answers = await _context.Answers
-                        .Where(a => submissionIds.Contains(a.SubmissionId))
-                        .ToListAsync();
-                    _context.Answers.RemoveRange(answers);
-                    await _context.SaveChangesAsync();
-
-                    var violations = await _context.Violations
-                        .Where(v => submissionIds.Contains(v.SubmissionId))
-                        .ToListAsync();
-                    _context.Violations.RemoveRange(violations);
-                    await _context.SaveChangesAsync();
-
-                    var submissions = await _context.Submissions
-                        .Where(s => submissionIds.Contains(s.Id))
-                        .ToListAsync();
-                    _context.Submissions.RemoveRange(submissions);
-                    await _context.SaveChangesAsync();
-                }
-
-                var questionIds = await _context.Questions
-                    .Where(q => q.ExamId == examId)
-                    .Select(q => q.Id)
-                    .ToListAsync();
-
-                if (questionIds.Count > 0)
-                {
-                    var options = await _context.QuestionOptions
-                        .Where(o => questionIds.Contains(o.QuestionId))
-                        .ToListAsync();
-                    _context.QuestionOptions.RemoveRange(options);
-                    await _context.SaveChangesAsync();
-
-                    var questions = await _context.Questions
-                        .Where(q => questionIds.Contains(q.Id))
-                        .ToListAsync();
-                    _context.Questions.RemoveRange(questions);
-                    await _context.SaveChangesAsync();
-                }
-
-                var exam = await _context.Exams.FirstOrDefaultAsync(e => e.Id == examId);
-                if (exam != null)
-                {
-                    _context.Exams.Remove(exam);
-                    await _context.SaveChangesAsync();
-                }
-            }
-
-            var enrollments = await _context.Enrollments
-                .Where(e => e.CourseId == course.Id)
-                .ToListAsync();
-            _context.Enrollments.RemoveRange(enrollments);
-            await _context.SaveChangesAsync();
-
             _context.Courses.Remove(course);
             await _context.SaveChangesAsync();
-
-            await transaction.CommitAsync();
 
             TempData["Success"] = "Course deleted successfully.";
             return RedirectToAction(nameof(Index));
@@ -458,7 +389,7 @@ namespace SmartExamAI.Areas.Teacher.Controllers
                     EmailConfirmed = true
                 };
 
-                var createResult = await _userManager.CreateAsync(user, DefaultStudentPassword);
+                var createResult = await _userManager.CreateAsync(user, _configuration["AppSettings:DefaultStudentPassword"] ?? "Pass1234");
                 if (!createResult.Succeeded)
                 {
                     return (false, string.Join(" ", createResult.Errors.Select(e => e.Description)));

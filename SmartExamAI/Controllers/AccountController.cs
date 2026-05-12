@@ -8,19 +8,21 @@ namespace SmartExamAI.Controllers
 {
     public class AccountController : Controller
     {
-        private const string TeacherInviteCode = "SMARTEXAM2025";
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IConfiguration _configuration;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _configuration = configuration;
         }
 
         // GET: /Account/Register
@@ -44,7 +46,7 @@ namespace SmartExamAI.Controllers
                 return View(model);
             }
 
-            if (model.Role == "Teacher" && model.InviteCode?.Trim() != TeacherInviteCode)
+            if (model.Role == "Teacher" && model.InviteCode?.Trim() != _configuration["AppSettings:TeacherInviteCode"])
             {
                 ModelState.AddModelError("InviteCode", "Invalid invite code.");
                 return View(model);

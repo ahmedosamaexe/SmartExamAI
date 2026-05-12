@@ -1,11 +1,92 @@
 @model int
 
-@if (Model > 0)
-{
-    <a href="@Url.Action("Index", "Dashboard", new { area = "Teacher" })" style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; text-decoration: none; margin-right: 8px;">
-        <i class="bi bi-bell" style="font-size: 18px; color: var(--c-muted);"></i>
-        <span style="position: absolute; top: 0; right: 0; background: var(--c-danger); color: white; font-size: 11px; font-weight: bold; border-radius: 50%; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1;">
-            @Model
-        </span>
-    </a>
-}
+<div style="position:relative;display:inline-flex;align-items:center;" id="notif-wrapper">
+    <button type="button" id="notif-bell-btn" style="background:none;border:none;cursor:pointer;position:relative;padding:4px 8px;">
+        <i class="bi bi-bell" style="font-size:18px;color:var(--c-muted);"></i>
+        @if (Model > 0)
+        {
+            <span id="notif-badge-count" style="position:absolute;top:-2px;right:0;background:var(--c-danger);color:#fff;font-size:10px;font-weight:700;border-radius:50%;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 4px;">
+                @(Model > 9 ? "9+" : Model.ToString())
+            </span>
+        }
+        else
+        {
+            <span id="notif-badge-count" style="display:none;position:absolute;top:-2px;right:0;background:var(--c-danger);color:#fff;font-size:10px;font-weight:700;border-radius:50%;min-width:16px;height:16px;align-items:center;justify-content:center;padding:0 4px;"></span>
+        }
+    </button>
+
+    <!-- Dropdown -->
+    <div id="notif-dropdown" style="display:none;position:absolute;right:0;top:40px;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;width:340px;max-height:420px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:2000;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--c-border);">
+            <span style="font-weight:600;font-size:14px;color:var(--c-text);">Notifications</span>
+            <button type="button" id="mark-all-read-btn" style="background:none;border:none;color:var(--c-primary);font-size:12px;cursor:pointer;font-weight:500;">Mark all read</button>
+        </div>
+        <div id="notif-list" style="padding:0;">
+            <div style="text-align:center;padding:24px;color:var(--c-muted);font-size:13px;">Loading...</div>
+        </div>
+        <a href="/Notifications" style="display:block;text-align:center;padding:10px;font-size:12px;color:var(--c-primary);text-decoration:none;border-top:1px solid var(--c-border);font-weight:500;">View all notifications</a>
+    </div>
+</div>
+
+<script>
+(function() {
+    var bell = document.getElementById('notif-bell-btn');
+    var dropdown = document.getElementById('notif-dropdown');
+    var list = document.getElementById('notif-list');
+    var loaded = false;
+
+    bell.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = dropdown.style.display !== 'none';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen && !loaded) { loadNotifications(); loaded = true; }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('notif-wrapper').contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    document.getElementById('mark-all-read-btn').addEventListener('click', function() {
+        fetch('/Notifications/MarkAllRead', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function() {
+            var badge = document.getElementById('notif-badge-count');
+            if (badge) badge.style.display = 'none';
+            document.querySelectorAll('.notif-item-unread').forEach(function(el) {
+                el.style.background = '#fff';
+                el.classList.remove('notif-item-unread');
+            });
+        });
+    });
+
+    function loadNotifications() {
+        fetch('/Notifications/Recent', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.items || data.items.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--c-muted);font-size:13px;">No notifications yet</div>';
+                return;
+            }
+            var html = '';
+            data.items.forEach(function(n) {
+                var bg = n.isRead ? '#fff' : 'var(--c-primary-light)';
+                var cls = n.isRead ? '' : 'notif-item-unread';
+                var icon = n.type === 'ExamPublished' ? 'bi-journal-plus' :
+                           n.type === 'ResultPublished' ? 'bi-graph-up' :
+                           n.type === 'SubmissionReceived' ? 'bi-check2-circle' :
+                           n.type === 'GradingNeeded' ? 'bi-pencil-square' : 'bi-bell';
+                html += '<a href="' + (n.link || '#') + '" class="' + cls + '" style="display:flex;gap:10px;padding:10px 16px;text-decoration:none;border-bottom:1px solid var(--c-border);background:' + bg + ';">';
+                html += '<i class="bi ' + icon + '" style="font-size:16px;color:var(--c-primary);margin-top:2px;flex-shrink:0;"></i>';
+                html += '<div><div style="font-size:13px;font-weight:500;color:var(--c-text);">' + n.title + '</div>';
+                html += '<div style="font-size:12px;color:var(--c-muted);margin-top:2px;">' + n.message + '</div>';
+                html += '<div style="font-size:11px;color:var(--c-muted);margin-top:4px;">' + n.timeAgo + '</div></div></a>';
+            });
+            list.innerHTML = html;
+        })
+        .catch(function() {
+            list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--c-muted);font-size:13px;">Failed to load</div>';
+        });
+    }
+})();
+</script>

@@ -1,0 +1,59 @@
+@model List<SmartExamAI.Models.Notification>
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Notifications</li>
+  </ol>
+</nav>
+}
+
+<div style="max-width:700px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="font-size:20px;font-weight:700;color:var(--c-text);margin:0;">Notifications</h2>
+        @if (Model.Any(n => !n.IsRead))
+        {
+            <form method="post" action="/Notifications/MarkAllRead" style="margin:0;">
+                <button type="submit" class="btn-primary-app" style="font-size:12px;padding:6px 14px;">Mark all as read</button>
+            </form>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-bell" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+            No notifications yet
+        </div>
+    }
+    else
+    {
+        foreach (var notif in Model)
+        {
+            var bg = notif.IsRead ? "var(--c-card)" : "var(--c-primary-light)";
+            var icon = notif.Type switch {
+                "ExamPublished" => "bi-journal-plus",
+                "ResultPublished" => "bi-graph-up",
+                "SubmissionReceived" => "bi-check2-circle",
+                "GradingNeeded" => "bi-pencil-square",
+                _ => "bi-bell"
+            };
+            <a href="@(notif.Link ?? "#")" style="display:flex;gap:14px;padding:14px 18px;background:@bg;border:1px solid var(--c-border);border-radius:8px;margin-bottom:8px;text-decoration:none;transition:background .15s;">
+                <i class="bi @icon" style="font-size:18px;color:var(--c-primary);margin-top:2px;flex-shrink:0;"></i>
+                <div style="flex:1;">
+                    <div style="font-size:14px;font-weight:@(notif.IsRead ? "400" : "600");color:var(--c-text);">@notif.Title</div>
+                    <div style="font-size:13px;color:var(--c-muted);margin-top:2px;">@notif.Message</div>
+                    <div style="font-size:11px;color:var(--c-muted);margin-top:6px;">@notif.CreatedAt.ToString("MMM dd, yyyy 'at' HH:mm")</div>
+                </div>
+                @if (!notif.IsRead)
+                {
+                    <div style="width:8px;height:8px;border-radius:50%;background:var(--c-primary);flex-shrink:0;margin-top:6px;"></div>
+                }
+            </a>
+        }
+    }
+</div>
