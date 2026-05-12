@@ -265,6 +265,45 @@
                 <button type="button" class="btn-sm-outline" id="downloadSampleCsvButton">Sample CSV</button>
             </div>
         </div>
+        <!-- AI Generate Questions (shown only if AI is enabled) -->
+        <div class="add-q-card" id="aiGenerateCard" style="margin-top:0;display:none;">
+            <h3 style="display:flex;align-items:center;gap:6px;">
+                <i class="bi bi-stars" style="color:var(--c-warning);"></i> AI Generate Questions
+            </h3>
+            <div id="aiError" style="background:#fde8e8;color:#8b2020;border-radius:7px;padding:10px 14px;font-size:12px;margin-bottom:12px;display:none;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                    <label class="field-label">Topic / Description</label>
+                    <input type="text" class="field-input" id="aiTopic" placeholder="e.g. Photosynthesis, Binary Trees..." />
+                </div>
+                <div>
+                    <label class="field-label">Question Type</label>
+                    <select class="field-input" id="aiType">
+                        <option value="MCQ">MCQ</option>
+                        <option value="TrueFalse">True / False</option>
+                        <option value="ShortAnswer">Short Answer</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                    <label class="field-label">Number of Questions</label>
+                    <input type="number" class="field-input" id="aiCount" min="1" max="20" value="5" />
+                </div>
+                <div>
+                    <label class="field-label">Marks per Question</label>
+                    <input type="number" class="field-input" id="aiMarks" min="1" value="1" />
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;">
+                <button type="button" class="btn-sm-primary" id="aiGenerateBtn" style="display:flex;align-items:center;gap:6px;">
+                    <i class="bi bi-stars"></i> Generate
+                </button>
+            </div>
+            <div id="aiLoading" style="display:none;text-align:center;padding:16px;color:var(--c-muted);font-size:13px;">
+                <i class="bi bi-hourglass-split"></i> AI is generating questions... this may take a moment.
+            </div>
+        </div>
     }
 </div>
 
@@ -374,5 +413,65 @@
         updateQuestionTypeSections();
     }
     renumberCards();
+
+    // --- AI Generate Questions ---
+    if (!isLocked) {
+        fetch('/Teacher/Exams/AiEnabled', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.enabled) document.getElementById('aiGenerateCard').style.display = ''; });
+
+        document.getElementById('aiGenerateBtn').addEventListener('click', function() {
+            var ae = document.getElementById('aiError'); clearError(ae);
+            var topic = document.getElementById('aiTopic').value.trim();
+            if (!topic) { showError(ae, 'Please enter a topic.'); return; }
+            var btn = document.getElementById('aiGenerateBtn');
+            btn.disabled = true; btn.style.opacity = '0.6';
+            document.getElementById('aiLoading').style.display = '';
+
+            fetch('/Teacher/Exams/GenerateQuestions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token(), 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({
+                    topic: topic,
+                    questionType: document.getElementById('aiType').value,
+                    count: parseInt(document.getElementById('aiCount').value) || 5,
+                    marks: parseInt(document.getElementById('aiMarks').value) || 1
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                btn.disabled = false; btn.style.opacity = '1';
+                document.getElementById('aiLoading').style.display = 'none';
+                if (!d.success) { showError(ae, d.message || 'AI generation failed.'); return; }
+                var parsed;
+                try { parsed = typeof d.questions === 'string' ? JSON.parse(d.questions) : d.questions; } catch(e) { showError(ae, 'AI returned invalid format.'); return; }
+                if (!Array.isArray(parsed) || parsed.length === 0) { showError(ae, 'AI returned no questions.'); return; }
+
+                var added = 0;
+                parsed.forEach(function(q) {
+                    var fd = new FormData();
+                    fd.append('__RequestVerificationToken', token());
+                    fd.append('ExamId', examId);
+                    fd.append('Text', q.text);
+                    fd.append('Type', q.type);
+                    fd.append('Marks', q.marks);
+                    if (q.options && q.options.length > 0) {
+                        q.options.forEach(function(o, i) { fd.append('Options[' + i + ']', o.text); });
+                        var correctIdx = q.options.findIndex(function(o) { return o.isCorrect; });
+                        if (q.type === 'TrueFalse') {
+                            fd.append('CorrectAnswer', q.options[correctIdx]?.text || 'True');
+                        } else if (correctIdx >= 0) {
+                            fd.append('CorrectOptionIndex', correctIdx);
+                        }
+                    }
+                    fetch('/Teacher/Exams/AddQuestion', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d2) { if (d2.success) { appendQuestionCard(d2.question); added++; } });
+                });
+                document.getElementById('aiTopic').value = '';
+            })
+            .catch(function() { btn.disabled = false; btn.style.opacity = '1'; document.getElementById('aiLoading').style.display = 'none'; showError(ae, 'Network error.'); });
+        });
+    }
 </script>
 

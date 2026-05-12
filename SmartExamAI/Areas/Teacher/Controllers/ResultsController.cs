@@ -19,11 +19,15 @@ namespace SmartExamAI.Areas.Teacher.Controllers
     {
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SmartExamAI.Services.NotificationService _notificationService;
+        private readonly SmartExamAI.Services.IAiService _aiService;
 
-        public ResultsController(AppDbContext context, UserManager<ApplicationUser> userManager)
+        public ResultsController(AppDbContext context, UserManager<ApplicationUser> userManager, SmartExamAI.Services.NotificationService notificationService, SmartExamAI.Services.IAiService aiService)
         {
             _context = context;
             _userManager = userManager;
+            _notificationService = notificationService;
+            _aiService = aiService;
         }
 
         [HttpGet("GradeExam/{examId:int}")]
@@ -257,6 +261,19 @@ namespace SmartExamAI.Areas.Teacher.Controllers
             exam.ResultsPublished = true;
             await _context.SaveChangesAsync();
 
+            // Notify students that results are published
+            var studentIds = submissions.Select(s => s.StudentId).Distinct().ToList();
+            if (studentIds.Count > 0)
+            {
+                await _notificationService.NotifyManyAsync(
+                    studentIds,
+                    "Results Published",
+                    $"Results for {exam.Title} are now available.",
+                    "ResultPublished",
+                    $"/Student/Courses/{exam.CourseId}"
+                );
+            }
+
             TempData["Success"] = "Results are now visible to students.";
             return RedirectToAction("Details", "Courses", new { area = "Teacher", id = exam.CourseId });
         }
@@ -444,6 +461,29 @@ namespace SmartExamAI.Areas.Teacher.Controllers
             bool allSubmitted = totalEnrolled > 0 && completedCount >= totalEnrolled;
 
             return Json(new { allSubmitted = allSubmitted, data = model });
+        }
+
+        // ── AI Grading ──
+
+        [HttpPost("SuggestGrade")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SuggestGrade([FromBody] SuggestGradeRequest request)
+        {
+            if (!_aiService.IsEnabled)
+                return Json(new { success = false, message = "AI is not configured." });
+
+            var suggestion = await _aiService.SuggestGradeAsync(request.QuestionText, request.StudentAnswer, request.MaxMarks);
+            if (suggestion == null)
+                return Json(new { success = false, message = "AI could not generate a suggestion." });
+
+            return Json(new { success = true, suggestion });
+        }
+
+        public sealed class SuggestGradeRequest
+        {
+            public string QuestionText { get; set; } = string.Empty;
+            public string StudentAnswer { get; set; } = string.Empty;
+            public int MaxMarks { get; set; }
         }
     }
 }

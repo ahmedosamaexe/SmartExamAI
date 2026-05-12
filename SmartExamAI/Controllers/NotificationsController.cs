@@ -45,25 +45,27 @@ namespace SmartExamAI.Controllers
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)
                 .Take(8)
-                .Select(n => new
-                {
-                    n.Id,
-                    n.Title,
-                    n.Message,
-                    n.Type,
-                    n.IsRead,
-                    n.Link,
-                    TimeAgo = GetTimeAgo(n.CreatedAt)
-                })
                 .ToListAsync();
+
+            var result = items.Select(n => new
+            {
+                n.Id,
+                n.Title,
+                n.Message,
+                n.Type,
+                n.IsRead,
+                n.Link,
+                TimeAgo = GetTimeAgo(n.CreatedAt)
+            });
 
             var unreadCount = await _context.Notifications
                 .CountAsync(n => n.UserId == userId && !n.IsRead);
 
-            return Json(new { items, unreadCount });
+            return Json(new { items = result, unreadCount });
         }
 
         [HttpPost("MarkRead/{id:int}")]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> MarkRead(int id)
         {
             var userId = _userManager.GetUserId(User);
@@ -82,6 +84,7 @@ namespace SmartExamAI.Controllers
         }
 
         [HttpPost("MarkAllRead")]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> MarkAllRead()
         {
             var userId = _userManager.GetUserId(User);

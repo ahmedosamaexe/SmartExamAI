@@ -1,9 +1,12 @@
 (function () {
     'use strict';
 
-    var submissionId = Number(document.getElementById('submissionId').value);
-    var violationThreshold = Number(document.getElementById('violationThreshold').value);
-    var currentViolationCount = Number(document.getElementById('violationCount').value);
+    var subEl = document.getElementById('hSubmissionId') || document.getElementById('submissionId');
+    var thrEl = document.getElementById('hViolationThreshold') || document.getElementById('violationThreshold');
+    var cntEl = document.getElementById('hViolationCount') || document.getElementById('violationCount');
+    var submissionId = subEl ? Number(subEl.value) : 0;
+    var violationThreshold = thrEl ? Number(thrEl.value) : 5;
+    var currentViolationCount = cntEl ? Number(cntEl.value) : 0;
     var lastViolationTime = 0;
     var COOLDOWN_MS = 3000;
 
@@ -61,7 +64,7 @@
 
     // --- Update violation badge ---
     function updateViolationBadge(count, threshold) {
-        var vc = document.getElementById('violation-count');
+        var vc = document.getElementById('vCount') || document.getElementById('violation-count');
         if (vc) vc.innerText = count;
 
         var badge = document.getElementById('violations-badge');

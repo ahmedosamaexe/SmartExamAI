@@ -69,7 +69,6 @@ else
 {
     var correctCount = Model.Answers.Count(a => a.IsCorrect == true);
     var totalQuestions = Model.Answers.Count;
-    var timeDiff = Model.SubmittedAt > DateTime.MinValue ? (Model.SubmittedAt - DateTime.MinValue) : TimeSpan.Zero;
 
     <!-- Top result card -->
     <div class="result-top">

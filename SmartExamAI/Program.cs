@@ -35,6 +35,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<SmartExamAI.Services.NotificationService>();
+builder.Services.AddHttpClient("GeminiAI");
+builder.Services.AddScoped<SmartExamAI.Services.IAiService, SmartExamAI.Services.GeminiAiService>();
 
 // ── MVC ──
 builder.Services.AddControllersWithViews();

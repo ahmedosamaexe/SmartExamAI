@@ -23,11 +23,13 @@ namespace SmartExamAI.Areas.Student.Controllers
 
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SmartExamAI.Services.NotificationService _notificationService;
 
-        public ExamController(AppDbContext context, UserManager<ApplicationUser> userManager)
+        public ExamController(AppDbContext context, UserManager<ApplicationUser> userManager, SmartExamAI.Services.NotificationService notificationService)
         {
             _context = context;
             _userManager = userManager;
+            _notificationService = notificationService;
         }
 
         [HttpGet("Rules/{examId:int}")]
@@ -242,6 +244,8 @@ namespace SmartExamAI.Areas.Student.Controllers
 
             var submission = await _context.Submissions
                 .Include(s => s.Exam)
+                    .ThenInclude(e => e.Course)
+                .Include(s => s.Exam)
                     .ThenInclude(e => e.Questions)
                         .ThenInclude(q => q.Options)
                 .Include(s => s.Answers)
@@ -293,6 +297,26 @@ namespace SmartExamAI.Areas.Student.Controllers
             submission.TotalScore = submission.Answers.Sum(a => a.Score);
 
             await _context.SaveChangesAsync();
+
+            // Notify teacher about new submission
+            var teacherId = submission.Exam.Course?.TeacherId;
+            if (!string.IsNullOrEmpty(teacherId))
+            {
+                var studentName = User.FindFirst("FullName")?.Value ?? "A student";
+                var hasShortAnswer = submission.Answers.Any(a => a.Question.Type == ShortAnswerType);
+                var notifType = hasShortAnswer ? "GradingNeeded" : "SubmissionReceived";
+                var message = hasShortAnswer
+                    ? $"{studentName} submitted {submission.Exam.Title} — needs grading."
+                    : $"{studentName} submitted {submission.Exam.Title}.";
+
+                await _notificationService.NotifyAsync(
+                    teacherId,
+                    "New Submission",
+                    message,
+                    notifType,
+                    $"/Teacher/Results/GradeExam/{submission.ExamId}"
+                );
+            }
 
             return Json(new { success = true, submissionId = submission.Id });
         }

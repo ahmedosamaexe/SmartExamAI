@@ -21,12 +21,14 @@ namespace SmartExamAI.Areas.Teacher.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SmartExamAI.Services.NotificationService _notificationService;
+        private readonly SmartExamAI.Services.IAiService _aiService;
 
-        public ExamsController(AppDbContext context, UserManager<ApplicationUser> userManager, SmartExamAI.Services.NotificationService notificationService)
+        public ExamsController(AppDbContext context, UserManager<ApplicationUser> userManager, SmartExamAI.Services.NotificationService notificationService, SmartExamAI.Services.IAiService aiService)
         {
             _context = context;
             _userManager = userManager;
             _notificationService = notificationService;
+            _aiService = aiService;
         }
 
         [HttpGet("Create")]
@@ -795,6 +797,35 @@ namespace SmartExamAI.Areas.Teacher.Controllers
         {
             public string Text { get; set; } = string.Empty;
             public bool IsCorrect { get; set; }
+        }
+        // ── AI Endpoints ──
+
+        [HttpGet("AiEnabled")]
+        public IActionResult AiEnabled()
+        {
+            return Json(new { enabled = _aiService.IsEnabled });
+        }
+
+        [HttpPost("GenerateQuestions")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateQuestions([FromBody] GenerateQuestionsRequest request)
+        {
+            if (!_aiService.IsEnabled)
+                return Json(new { success = false, message = "AI is not configured. Add an API key in settings." });
+
+            var result = await _aiService.GenerateQuestionsAsync(request.Topic, request.QuestionType, request.Count, request.Marks);
+            if (result == null)
+                return Json(new { success = false, message = "AI failed to generate questions. Try again." });
+
+            return Json(new { success = true, questions = result });
+        }
+
+        public sealed class GenerateQuestionsRequest
+        {
+            public string Topic { get; set; } = string.Empty;
+            public string QuestionType { get; set; } = "MCQ";
+            public int Count { get; set; } = 3;
+            public int Marks { get; set; } = 1;
         }
     }
 }
