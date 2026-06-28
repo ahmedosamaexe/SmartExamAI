@@ -683,18 +683,26 @@ namespace SmartExamAI.Services
                 questions = ShuffleQuestions(questions, submission.Id);
             }
 
-            var orderedQuestions = questions.Select((q, index) => new ExamQuestionViewModel
+            var existingAnswers = submission.Answers?.ToDictionary(a => a.QuestionId) ?? new Dictionary<int, Answer>();
+
+            var orderedQuestions = questions.Select((q, index) =>
             {
-                QuestionId = q.Id,
-                Text = q.Text,
-                Type = q.Type,
-                Marks = q.Marks,
-                OrderIndex = index + 1,
-                Options = q.Options.OrderBy(o => o.Id).Select(o => new ExamOptionViewModel
+                existingAnswers.TryGetValue(q.Id, out var existAns);
+                return new ExamQuestionViewModel
                 {
-                    OptionId = o.Id,
-                    Text = o.Text
-                }).ToList()
+                    QuestionId = q.Id,
+                    Text = q.Text,
+                    Type = q.Type,
+                    Marks = q.Marks,
+                    OrderIndex = index + 1,
+                    SelectedOptionId = existAns?.SelectedOptionId,
+                    TextAnswer = existAns?.TextAnswer,
+                    Options = q.Options.OrderBy(o => o.Id).Select(o => new ExamOptionViewModel
+                    {
+                        OptionId = o.Id,
+                        Text = o.Text
+                    }).ToList()
+                };
             }).ToList();
 
             var remainingSeconds = Math.Max(0, (int)Math.Floor((endTime - DateTime.UtcNow).TotalSeconds));
@@ -742,7 +750,8 @@ namespace SmartExamAI.Services
                 if (question.Type == ShortAnswerType)
                 {
                     answer.SelectedOptionId = null;
-                    answer.TextAnswer = submittedAnswer?.TextAnswer?.Trim();
+                    var newText = submittedAnswer?.TextAnswer?.Trim();
+                    if (!string.IsNullOrEmpty(newText)) answer.TextAnswer = newText;
                     answer.IsCorrect = null;
                     answer.Score = 0;
                     _examRepository.UpdateAnswer(answer);
@@ -750,7 +759,7 @@ namespace SmartExamAI.Services
                 }
 
                 answer.TextAnswer = null;
-                answer.SelectedOptionId = submittedAnswer?.SelectedOptionId;
+                if (submittedAnswer?.SelectedOptionId != null) answer.SelectedOptionId = submittedAnswer.SelectedOptionId;
 
                 var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
                 var isCorrect = correctOption != null && answer.SelectedOptionId == correctOption.Id;

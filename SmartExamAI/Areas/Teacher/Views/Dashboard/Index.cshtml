@@ -1,239 +1,157 @@
 @model SmartExamAI.ViewModels.Teacher.TeacherDashboardViewModel
 @{
-    ViewData["Title"] = "Teacher Dashboard";
+    ViewData["Title"] = "Dashboard";
     var teacherName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Teacher";
+    var firstName = teacherName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? teacherName;
 }
 
 <style>
-    .dashboard-header {
-        margin-bottom: 24px;
-    }
-    .dashboard-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--c-text);
-        margin: 0 0 8px 0;
-    }
-    .dashboard-subtitle {
-        color: var(--c-muted);
-        font-size: 14px;
-        margin: 0;
-    }
+    .dash-greeting { margin-bottom: 24px; }
+    .dash-greeting h1 { font-size: 22px; font-weight: 700; color: var(--c-text); margin: 0 0 4px; }
+    .dash-greeting p { font-size: 13px; color: var(--c-muted); margin: 0; }
 
-    .moodle-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 24px;
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+        background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px;
+        padding: 18px; text-align: center;
     }
-    @@media (min-width: 992px) {
-        .moodle-grid {
-            grid-template-columns: 2.5fr 1fr;
-        }
-    }
+    .stat-num { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .stat-lbl { font-size: 11px; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .moodle-block {
-        background: var(--c-card);
-        border: 1px solid var(--c-border);
-        border-radius: 8px;
-        margin-bottom: 24px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    .dash-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+    .dash-block {
+        background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px;
     }
-    .moodle-block-header {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--c-border);
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--c-text);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .dash-block-head {
+        padding: 14px 18px; border-bottom: 1px solid var(--c-border);
+        font-size: 14px; font-weight: 600; color: var(--c-text);
+        display: flex; justify-content: space-between; align-items: center;
     }
-    .moodle-block-body {
-        padding: 20px;
-    }
+    .dash-block-body { padding: 16px 18px; }
 
-    /* Stats Grid */
-    .teacher-stats {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
+    .item-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 0; border-bottom: 1px solid var(--c-border);
     }
-    .t-stat-card {
-        padding: 16px;
-        background: #F8F9FA;
-        border-radius: 8px;
-        border: 1px solid var(--c-border);
-        text-align: center;
-    }
-    .t-stat-val { font-size: 24px; font-weight: 700; color: var(--c-primary); line-height: 1; margin-bottom: 4px; }
-    .t-stat-lbl { font-size: 12px; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* Courses Overview */
-    .course-overview-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
-    }
-    .course-card {
-        border: 1px solid var(--c-border);
-        border-radius: 8px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.2s, box-shadow 0.2s;
-        text-decoration: none;
-        color: inherit;
-        position: relative;
-    }
-    .course-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: inherit;
-    }
-    .course-img {
-        height: 120px;
-        background: var(--c-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 40px;
-    }
-    .course-info {
-        padding: 16px;
-        background: #fff;
-        flex: 1;
-    }
-    .course-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--c-text);
-        margin-bottom: 4px;
-    }
-    .course-tagline {
-        font-size: 12px;
-        color: var(--c-muted);
-    }
-
-    /* Needs Grading List */
-    .grade-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--c-border);
-    }
-    .grade-item:last-child { border-bottom: none; }
-    .grade-student { font-size: 14px; font-weight: 600; color: var(--c-text); }
-    .grade-exam { font-size: 12px; color: var(--c-muted); margin-top: 2px; }
-
-    /* Activity */
-    .activity-item {
-        display: flex;
-        gap: 12px;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--c-border);
-    }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-size: 14px;
-    }
-    .activity-icon.success { background: #E8F5E9; color: #1B5E20; }
-    .activity-icon.danger { background: #FFEBEE; color: #B71C1C; }
-    .activity-details { flex: 1; }
-    .activity-text { font-size: 13px; color: var(--c-text); }
-    .activity-time { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
+    .item-row:last-child { border-bottom: none; }
+    .item-title { font-size: 13px; font-weight: 600; color: var(--c-text); }
+    .item-sub { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
 
     .btn-action {
-        display: inline-block;
-        padding: 6px 16px;
-        background: var(--c-primary);
-        color: #fff;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
+        display: inline-block; padding: 5px 14px; background: var(--c-primary);
+        color: #fff; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;
     }
     .btn-action:hover { background: var(--c-primary-hover); color: #fff; }
+    .btn-action-outline {
+        display: inline-block; padding: 4px 12px; background: #F8F9FA;
+        color: var(--c-text); border: 1px solid var(--c-border); border-radius: 6px;
+        text-decoration: none; font-size: 12px; font-weight: 500;
+    }
+    .btn-action-outline:hover { background: #eee; color: var(--c-text); }
+
+    .badge-count {
+        font-size: 11px; background: var(--c-warning); color: #fff;
+        padding: 2px 8px; border-radius: 10px; font-weight: 700;
+    }
+
+    .activity-dot {
+        width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+    }
+    .dot-green { background: var(--c-success); }
+    .dot-red { background: var(--c-danger); }
+
+    @@media (max-width: 767px) {
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
+        .dash-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
-<div class="dashboard-header">
-    <h1 class="dashboard-title">Dashboard</h1>
-    <p class="dashboard-subtitle">Welcome back, @teacherName</p>
+<div class="dash-greeting">
+    <h1>Hi, @firstName! 👋</h1>
+    <p>Here's your teaching overview</p>
 </div>
 
-<div class="moodle-grid">
-    <!-- Left Column: Courses & Needs Grading -->
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-primary);">@Model.TotalCourses</div>
+        <div class="stat-lbl">Courses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-text);">@Model.TotalStudents</div>
+        <div class="stat-lbl">Students</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-success);">@Model.ActiveExams</div>
+        <div class="stat-lbl">Active Exams</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-warning);">@Model.PendingGrading</div>
+        <div class="stat-lbl">To Grade</div>
+    </div>
+</div>
+
+<!-- Grid -->
+<div class="dash-grid">
+    <!-- Left: Courses + Needs Grading -->
     <div>
-        <div class="moodle-block">
-            <div class="moodle-block-header">
+        <!-- My Courses -->
+        <div class="dash-block" style="margin-bottom: 20px;">
+            <div class="dash-block-head">
                 My Courses
-                <a href="@Url.Action("Create", "Courses", new { area = "Teacher" })" class="btn-action">Create Course</a>
+                <a href="@Url.Action("Create", "Courses", new { area = "Teacher" })" class="btn-action">New Course</a>
             </div>
-            <div class="moodle-block-body">
+            <div class="dash-block-body">
                 @{
                     var recentCourses = ViewData["RecentCourses"] as List<SmartExamAI.Models.Course> ?? new List<SmartExamAI.Models.Course>();
                 }
                 @if (!recentCourses.Any())
                 {
-                    <div class="empty-state">
-                        <i class="bi bi-journal-plus" style="font-size: 32px; color: #ccc;"></i>
-                        <p style="margin-top: 10px;">You haven't created any courses yet.</p>
-                    </div>
+                    <div class="empty-state" style="padding: 1rem;">No courses yet</div>
                 }
                 else
                 {
-                    <div class="course-overview-grid">
-                        @foreach (var course in recentCourses)
-                        {
-                            <a href="/Teacher/Courses/@course.Id" class="course-card">
-                                <div class="course-img" style="background-color: @(string.IsNullOrEmpty(course.Color) ? "var(--c-primary)" : course.Color)">
-                                    <i class="bi bi-mortarboard-fill"></i>
-                                </div>
-                                <div class="course-info">
-                                    <div class="course-title">@course.Title</div>
-                                    @if (!string.IsNullOrWhiteSpace(course.Tagline))
-                                    {
-                                        <div class="course-tagline">@course.Tagline</div>
-                                    }
-                                </div>
-                            </a>
-                        }
-                    </div>
+                    @foreach (var course in recentCourses)
+                    {
+                        <div class="item-row">
+                            <div>
+                                <div class="item-title">@course.Title</div>
+                                @if (!string.IsNullOrWhiteSpace(course.Tagline))
+                                {
+                                    <div class="item-sub">@course.Tagline</div>
+                                }
+                            </div>
+                            <a href="/Teacher/Courses/@course.Id" class="btn-action-outline">Open</a>
+                        </div>
+                    }
                 }
             </div>
         </div>
 
-        <div class="moodle-block">
-            <div class="moodle-block-header">
+        <!-- Needs Grading -->
+        <div class="dash-block">
+            <div class="dash-block-head">
                 Needs Grading
                 @if (Model.NeedsGradingList.Any())
                 {
-                    <span style="font-size: 12px; background: var(--c-warning); color: #fff; padding: 2px 8px; border-radius: 12px; font-weight: 700;">@Model.PendingGrading</span>
+                    <span class="badge-count">@Model.PendingGrading</span>
                 }
             </div>
-            <div class="moodle-block-body">
+            <div class="dash-block-body">
                 @if (!Model.NeedsGradingList.Any())
                 {
-                    <div class="empty-state">All caught up! No submissions need grading.</div>
+                    <div class="empty-state" style="padding: 1rem;">All caught up!</div>
                 }
                 else
                 {
-                    foreach (var item in Model.NeedsGradingList)
+                    @foreach (var item in Model.NeedsGradingList)
                     {
-                        <div class="grade-item">
+                        <div class="item-row">
                             <div>
-                                <div class="grade-student">@item.StudentName</div>
-                                <div class="grade-exam">@item.ExamTitle <span style="color: var(--c-border);">|</span> @item.CourseTitle</div>
+                                <div class="item-title">@item.StudentName</div>
+                                <div class="item-sub">@item.ExamTitle · @item.CourseTitle</div>
                             </div>
-                            <a href="/Teacher/Results/GradeSubmission/@item.SubmissionId" class="btn-action" style="background: #F8F9FA; color: var(--c-text); border: 1px solid var(--c-border);">Grade</a>
+                            <a href="/Teacher/Results/GradeSubmission/@item.SubmissionId" class="btn-action-outline">Grade</a>
                         </div>
                     }
                 }
@@ -241,58 +159,30 @@
         </div>
     </div>
 
-    <!-- Right Column: Stats & Activity -->
+    <!-- Right: Recent Activity -->
     <div>
-        <div class="moodle-block">
-            <div class="moodle-block-header">Overview</div>
-            <div class="moodle-block-body">
-                <div class="teacher-stats">
-                    <div class="t-stat-card">
-                        <div class="t-stat-val">@Model.TotalCourses</div>
-                        <div class="t-stat-lbl">Courses</div>
-                    </div>
-                    <div class="t-stat-card">
-                        <div class="t-stat-val">@Model.TotalStudents</div>
-                        <div class="t-stat-lbl">Students</div>
-                    </div>
-                    <div class="t-stat-card">
-                        <div class="t-stat-val">@Model.ActiveExams</div>
-                        <div class="t-stat-lbl">Active Exams</div>
-                    </div>
-                    <div class="t-stat-card">
-                        <div class="t-stat-val">@Model.PendingGrading</div>
-                        <div class="t-stat-lbl">To Grade</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="moodle-block">
-            <div class="moodle-block-header">Recent Activity</div>
-            <div class="moodle-block-body" style="padding: 10px 20px;">
+        <div class="dash-block">
+            <div class="dash-block-head">Recent Activity</div>
+            <div class="dash-block-body">
                 @if (!Model.RecentActivity.Any())
                 {
-                    <div class="empty-state">No recent activity</div>
+                    <div class="empty-state" style="padding: 1rem;">No activity yet</div>
                 }
                 else
                 {
-                    foreach (var activity in Model.RecentActivity)
+                    @foreach (var activity in Model.RecentActivity)
                     {
                         var timeSpan = DateTime.UtcNow - activity.OccurredAt;
-                        string timeAgo = timeSpan.TotalMinutes < 60 ? $"{(int)timeSpan.TotalMinutes}m ago" : 
+                        string timeAgo = timeSpan.TotalMinutes < 60 ? $"{(int)timeSpan.TotalMinutes}m ago" :
                                          (timeSpan.TotalHours < 24 ? $"{(int)timeSpan.TotalHours}h ago" : $"{(int)timeSpan.TotalDays}d ago");
 
-                        <div class="activity-item">
-                            <div class="activity-icon @(activity.Type == "Submission" ? "success" : "danger")">
-                                <i class="bi @(activity.Type == "Submission" ? "bi-check2-circle" : "bi-exclamation-triangle")"></i>
-                            </div>
-                            <div class="activity-details">
-                                <div class="activity-text">
-                                    <strong>@activity.StudentName</strong> 
-                                    @(activity.Type == "Submission" ? "submitted" : "triggered a violation on") 
-                                    @activity.ExamTitle
+                        <div class="item-row" style="gap: 10px;">
+                            <div style="display:flex;gap:8px;align-items:flex-start;">
+                                <div class="activity-dot @(activity.Type == "Submission" ? "dot-green" : "dot-red")"></div>
+                                <div>
+                                    <div class="item-title" style="font-weight:500;">@activity.StudentName @(activity.Type == "Submission" ? "submitted" : "violation on") @activity.ExamTitle</div>
+                                    <div class="item-sub">@timeAgo</div>
                                 </div>
-                                <div class="activity-time">@timeAgo</div>
                             </div>
                         </div>
                     }

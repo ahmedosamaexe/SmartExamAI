@@ -1,7 +1,7 @@
 @model SmartExamAI.ViewModels.Student.StudentDashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var avgDisplay = Model.AverageScore.HasValue ? $"{Model.AverageScore.Value:0}%" : "N/A";
+    var avgDisplay = Model.AverageScore.HasValue ? $"{Model.AverageScore.Value:0}%" : "—";
     var avgColor = Model.AverageScore.HasValue && Model.AverageScore.Value >= 60 ? "var(--c-success)" : "var(--c-danger)";
     if (!Model.AverageScore.HasValue) avgColor = "var(--c-muted)";
     var studentName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Student";
@@ -9,257 +9,140 @@
 }
 
 <style>
-    .dashboard-header {
-        margin-bottom: 24px;
-    }
-    .dashboard-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--c-text);
-        margin: 0 0 8px 0;
-    }
-    .dashboard-subtitle {
-        color: var(--c-muted);
-        font-size: 14px;
-        margin: 0;
-    }
+    .dash-greeting { margin-bottom: 24px; }
+    .dash-greeting h1 { font-size: 22px; font-weight: 700; color: var(--c-text); margin: 0 0 4px; }
+    .dash-greeting p { font-size: 13px; color: var(--c-muted); margin: 0; }
 
-    .moodle-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 24px;
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+        background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px;
+        padding: 18px; text-align: center;
     }
-    @@media (min-width: 992px) {
-        .moodle-grid {
-            grid-template-columns: 2.5fr 1fr;
-        }
-    }
+    .stat-num { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+    .stat-lbl { font-size: 11px; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .moodle-block {
-        background: var(--c-card);
-        border: 1px solid var(--c-border);
-        border-radius: 8px;
-        margin-bottom: 24px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .dash-block {
+        background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px;
     }
-    .moodle-block-header {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--c-border);
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--c-text);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .dash-block-head {
+        padding: 14px 18px; border-bottom: 1px solid var(--c-border);
+        font-size: 14px; font-weight: 600; color: var(--c-text);
+        display: flex; justify-content: space-between; align-items: center;
     }
-    .moodle-block-body {
-        padding: 20px;
-    }
+    .dash-block-body { padding: 16px 18px; }
 
-    /* Course Overview */
-    .course-overview-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
+    .exam-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 0; border-bottom: 1px solid var(--c-border);
     }
-    .course-card {
-        border: 1px solid var(--c-border);
-        border-radius: 8px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.2s, box-shadow 0.2s;
-        text-decoration: none;
-        color: inherit;
-    }
-    .course-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        color: inherit;
-    }
-    .course-img {
-        height: 120px;
-        background: var(--c-primary-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--c-primary);
-        font-size: 40px;
-    }
-    .course-info {
-        padding: 16px;
-        background: #fff;
-        flex: 1;
-    }
-    .course-cat {
-        font-size: 11px;
-        text-transform: uppercase;
-        color: var(--c-muted);
-        letter-spacing: 0.5px;
-        margin-bottom: 6px;
-    }
-    .course-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--c-text);
-        margin-bottom: 4px;
-    }
+    .exam-row:last-child { border-bottom: none; }
+    .exam-row-title { font-size: 13px; font-weight: 600; color: var(--c-text); }
+    .exam-row-sub { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
 
-    /* Timeline */
-    .timeline-item {
-        display: flex;
-        gap: 16px;
-        margin-bottom: 20px;
+    .score-pill {
+        font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px;
     }
-    .timeline-item:last-child {
-        margin-bottom: 0;
-    }
-    .timeline-date {
-        flex-shrink: 0;
-        width: 60px;
-        text-align: center;
-        background: #F8F9FA;
-        border-radius: 8px;
-        padding: 8px 4px;
-        border: 1px solid var(--c-border);
-    }
-    .timeline-month { font-size: 11px; text-transform: uppercase; color: var(--c-danger); font-weight: 700; }
-    .timeline-day { font-size: 18px; font-weight: 700; color: var(--c-text); line-height: 1; margin-top: 2px; }
-    .timeline-content {
-        flex: 1;
-        padding-top: 2px;
-    }
-    .timeline-title { font-size: 14px; font-weight: 600; color: var(--c-text); }
-    .timeline-course { font-size: 12px; color: var(--c-primary); margin-top: 2px; }
-    .timeline-meta { font-size: 11px; color: var(--c-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-
-    /* Stats List */
-    .stat-list-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px 0;
-        border-bottom: 1px dashed var(--c-border);
-    }
-    .stat-list-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .stat-name { font-size: 13px; color: var(--c-text); }
-    .stat-val { font-size: 14px; font-weight: 600; color: var(--c-text); }
+    .score-pass { background: #D4EDDA; color: #155724; }
+    .score-fail { background: #F8D7DA; color: #721C24; }
 
     .btn-action {
-        display: inline-block;
-        padding: 6px 16px;
-        background: var(--c-primary);
-        color: #fff;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
+        display: inline-block; padding: 5px 14px; background: var(--c-primary);
+        color: #fff; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 500;
     }
     .btn-action:hover { background: var(--c-primary-hover); color: #fff; }
+
+    @@media (max-width: 767px) {
+        .stats-row { grid-template-columns: 1fr; }
+        .dash-grid { grid-template-columns: 1fr; }
+    }
 </style>
 
-<div class="dashboard-header">
-    <h1 class="dashboard-title">Hi, @firstName! 👋</h1>
-    <p class="dashboard-subtitle">Here's your academic overview</p>
+<div class="dash-greeting">
+    <h1>Hi, @firstName! 👋</h1>
+    <p>Here's your overview</p>
 </div>
 
-<div class="moodle-grid">
-    <!-- Left Column: Course Overview -->
-    <div>
-        <div class="moodle-block">
-            <div class="moodle-block-header">
-                Course Overview
-                <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="btn-action">Join a Course</a>
-            </div>
-            <div class="moodle-block-body">
-                @if (Model.EnrolledCourses == 0)
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-primary);">@Model.EnrolledCourses</div>
+        <div class="stat-lbl">Courses</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-text);">@Model.CompletedExams</div>
+        <div class="stat-lbl">Exams Done</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-num" style="color: @avgColor;">@avgDisplay</div>
+        <div class="stat-lbl">Average</div>
+    </div>
+</div>
+
+<!-- Two columns -->
+<div class="dash-grid">
+    <!-- Upcoming Exams -->
+    <div class="dash-block">
+        <div class="dash-block-head">Upcoming Exams</div>
+        <div class="dash-block-body">
+            @if (!Model.UpcomingExams.Any())
+            {
+                <div class="empty-state" style="padding: 1rem;">No upcoming exams</div>
+            }
+            else
+            {
+                @foreach (var exam in Model.UpcomingExams)
                 {
-                    <div class="empty-state">
-                        <i class="bi bi-journal-x" style="font-size: 32px; color: #ccc;"></i>
-                        <p style="margin-top: 10px;">You are not enrolled in any courses yet.</p>
+                    <div class="exam-row">
+                        <div>
+                            <div class="exam-row-title">@exam.ExamTitle</div>
+                            <div class="exam-row-sub">@exam.CourseTitle · @exam.StartTime.ToLocalTime().ToString("MMM dd, hh:mm tt")</div>
+                        </div>
                     </div>
                 }
-                else
-                {
-                    <div class="course-overview-grid">
-                        @if (!Model.RecentResults.Any())
-                        {
-                            <div class="empty-state">No recent results found.</div>
-                        }
-                        else
-                        {
-                            @foreach (var result in Model.RecentResults)
-                            {
-                                var passed = result.MaxScore > 0 && ((double)result.TotalScore / result.MaxScore * 100) >= 60;
-                                var scoreColor = passed ? "var(--c-success)" : "var(--c-danger)";
-                                
-                                <div class="course-card">
-                                    <div class="course-img" style="background: @(passed ? "#E8F5E9" : "#FFEBEE"); color: @scoreColor;">
-                                        @(passed ? "A" : "F")
-                                    </div>
-                                    <div class="course-info">
-                                        <div class="course-cat">@result.CourseTitle</div>
-                                        <div class="course-title">@result.ExamTitle</div>
-                                        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="font-weight: 700; color: @scoreColor;">@result.TotalScore / @result.MaxScore</span>
-                                            <a href="@Url.Action("Result", "Exam", new { area = "Student", submissionId = result.SubmissionId })" style="font-size: 12px; color: var(--c-primary); text-decoration: none;">Review</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        }
-                    </div>
-                }
-            </div>
+            }
         </div>
     </div>
 
-    <!-- Right Column: Timeline & Stats -->
-    <div>
-        <div class="moodle-block">
-            <div class="moodle-block-header">Timeline</div>
-            <div class="moodle-block-body">
-                @if (!Model.UpcomingExams.Any())
-                {
-                    <div class="empty-state" style="padding: 1rem;">No upcoming exams.</div>
-                }
-                else
-                {
-                    @foreach (var exam in Model.UpcomingExams)
-                    {
-                        <div class="timeline-item">
-                            <div class="timeline-date">
-                                <div class="timeline-month">@exam.StartTime.ToString("MMM")</div>
-                                <div class="timeline-day">@exam.StartTime.Day</div>
-                            </div>
-                            <div class="timeline-content">
-                                <div class="timeline-title">@exam.ExamTitle</div>
-                                <div class="timeline-course">@exam.CourseTitle</div>
-                                <div class="timeline-meta">
-                                    <i class="bi bi-clock"></i> @exam.StartTime.ToString("hh:mm tt")
-                                </div>
-                            </div>
-                        </div>
-                    }
-                }
-            </div>
+    <!-- Recent Results -->
+    <div class="dash-block">
+        <div class="dash-block-head">
+            Recent Results
+            <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="btn-action">My Courses</a>
         </div>
-
-        <div class="moodle-block">
-            <div class="moodle-block-header">Academic Stats</div>
-            <div class="moodle-block-body" style="padding: 10px 20px;">
-                <div class="stat-list-item">
-                    <span class="stat-name">Enrolled Courses</span>
-                    <span class="stat-val">@Model.EnrolledCourses</span>
-                </div>
-                <div class="stat-list-item">
-                    <span class="stat-name">Completed Exams</span>
-                    <span class="stat-val">@Model.CompletedExams</span>
-                </div>
-                <div class="stat-list-item">
-                    <span class="stat-name">Average Score</span>
-                    <span class="stat-val" style="color: @avgColor;">@avgDisplay</span>
-                </div>
-            </div>
+        <div class="dash-block-body">
+            @if (!Model.RecentResults.Any())
+            {
+                <div class="empty-state" style="padding: 1rem;">No results yet</div>
+            }
+            else
+            {
+                @foreach (var result in Model.RecentResults)
+                {
+                    <div class="exam-row">
+                        <div>
+                            <div class="exam-row-title">@result.ExamTitle</div>
+                            <div class="exam-row-sub">@result.CourseTitle</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            @if (result.IsTerminated)
+                            {
+                                <span class="score-pill score-fail">Terminated</span>
+                            }
+                            else if (!result.ResultsPublished || result.HasPendingGrading)
+                            {
+                                <span class="score-pill" style="background:#E2E8F0;color:#475569;">Pending Grading</span>
+                            }
+                            else
+                            {
+                                var passed = result.MaxScore > 0 && ((double)result.TotalScore / result.MaxScore * 100) >= 60;
+                                <span class="score-pill @(passed ? "score-pass" : "score-fail")">@result.TotalScore/@result.MaxScore</span>
+                            }
+                            <a href="@Url.Action("Result", "Exam", new { area = "Student", submissionId = result.SubmissionId })" style="font-size:12px;color:var(--c-primary);text-decoration:none;">View</a>
+                        </div>
+                    </div>
+                }
+            }
         </div>
     </div>
 </div>

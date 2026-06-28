@@ -109,8 +109,9 @@ namespace SmartExamAI.Services
                 var exam = sub.Exam;
                 if (exam == null) continue;
 
-                int score = sub.Answers?.Sum(a => a.Score) ?? 0;
+                int score = sub.Answers?.Sum(a => a.Score) ?? sub.TotalScore;
                 int maxScore = exam.Questions?.Sum(q => q.Marks) ?? 0;
+                bool hasPending = sub.Answers?.Any(a => a.Question?.Type == "ShortAnswer" && a.IsCorrect == null) ?? false;
 
                 completedList.Add(new RecentResultItem
                 {
@@ -118,12 +119,16 @@ namespace SmartExamAI.Services
                     ExamTitle = exam.Title,
                     CourseTitle = exam.Course?.Title ?? string.Empty,
                     TotalScore = score,
-                    MaxScore = maxScore
+                    MaxScore = maxScore,
+                    ResultsPublished = exam.ResultsPublished,
+                    IsTerminated = sub.IsTerminated,
+                    HasPendingGrading = hasPending
                 });
             }
 
-            double? avgScore = completedList.Any(c => c.MaxScore > 0)
-                ? completedList.Where(c => c.MaxScore > 0).Average(c => ((double)c.TotalScore / c.MaxScore) * 100)
+            var gradedResults = completedList.Where(c => c.MaxScore > 0 && c.ResultsPublished && !c.HasPendingGrading && !c.IsTerminated).ToList();
+            double? avgScore = gradedResults.Any()
+                ? gradedResults.Average(c => ((double)c.TotalScore / c.MaxScore) * 100)
                 : null;
 
             return new StudentDashboardViewModel

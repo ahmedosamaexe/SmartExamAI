@@ -8,152 +8,108 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
-        /* Moodle-like Navbar styling */
-        .moodle-navbar {
-            background-color: var(--c-card);
+        /* Top Navbar */
+        .top-navbar {
+            background: var(--c-card);
             border-bottom: 1px solid var(--c-border);
-            padding: 0.5rem 1.5rem;
+            padding: 0 1.25rem;
+            height: 56px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             position: sticky;
             top: 0;
             z-index: 1030;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
         }
-        .moodle-brand {
-            display: flex;
-            flex-direction: column;
-            text-decoration: none;
+        .top-left { display: flex; align-items: center; gap: 12px; }
+        .drawer-toggle {
+            background: none; border: none; cursor: pointer;
+            color: var(--c-text); font-size: 20px; padding: 4px;
+            display: flex; align-items: center;
         }
-        .moodle-brand-name {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--c-primary);
-            letter-spacing: -0.5px;
-            line-height: 1.2;
-        }
-        .moodle-brand-tag {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--c-muted);
-        }
-        .moodle-nav-links {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-left: 2rem;
-        }
-        .moodle-nav-links a {
-            text-decoration: none;
-            color: var(--c-text);
-            font-size: 0.95rem;
-            font-weight: 500;
-            padding: 0.5rem 0.75rem;
-            border-radius: 6px;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .moodle-nav-links a:hover {
-            background-color: #F8F9FA;
-            color: var(--c-primary);
-        }
-        .moodle-nav-links a.active {
-            color: var(--c-primary);
-            background-color: var(--c-primary-light);
-        }
-        
-        /* Main wrap is now full width */
-        .main-wrap {
-            min-height: calc(100vh - 60px);
-            display: flex;
-            flex-direction: column;
-            background: var(--c-page-bg);
-        }
-        .main-content {
-            flex: 1;
-            padding: 2rem 1.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
+        .brand-link { text-decoration: none; }
+        .brand-name { font-size: 1.1rem; font-weight: 700; color: var(--c-primary); }
 
-        .user-menu {
-            position: relative;
-            display: inline-block;
+        /* Sidebar Drawer */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3); z-index: 1040;
         }
+        .sidebar-overlay.open { display: block; }
+        .sidebar {
+            position: fixed; top: 0; left: -280px;
+            width: 280px; height: 100vh;
+            background: var(--c-sidebar-bg); z-index: 1050;
+            transition: left 0.25s ease;
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+
+        .sidebar-header {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-brand { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .sidebar-brand-sub { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--c-sidebar-text); margin-top: 2px; }
+
+        .sidebar-nav { padding: 12px 0; flex: 1; }
+        .sidebar-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 20px; color: var(--c-sidebar-text);
+            text-decoration: none; font-size: 14px; font-weight: 500;
+            transition: all 0.15s; border-left: 3px solid transparent;
+        }
+        .sidebar-link:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .sidebar-link.active {
+            background: rgba(17,119,209,0.15); color: #fff;
+            border-left-color: var(--c-primary);
+        }
+        .sidebar-link i { font-size: 18px; width: 22px; text-align: center; }
+
+        .sidebar-section { padding: 16px 20px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.3); }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-user { display: flex; align-items: center; gap: 10px; }
+        .sidebar-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: var(--c-primary); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 13px; flex-shrink: 0;
+        }
+        .sidebar-uname { font-size: 13px; color: #fff; font-weight: 500; }
+        .sidebar-urole { font-size: 11px; color: var(--c-sidebar-text); }
+
+        /* Avatar in top bar */
+        .user-menu { position: relative; }
         .avatar-btn {
-            background: var(--c-primary);
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 38px;
-            height: 38px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.2s;
-        }
-        .avatar-btn:hover {
-            opacity: 0.9;
+            background: var(--c-primary); color: #fff; border: none; border-radius: 50%;
+            width: 36px; height: 36px; font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
         .avatar-menu {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 48px;
-            background: var(--c-card);
-            border: 1px solid var(--c-border);
-            border-radius: 8px;
-            min-width: 220px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            z-index: 1000;
-            padding: 0.5rem 0;
+            display: none; position: absolute; right: 0; top: 44px;
+            background: var(--c-card); border: 1px solid var(--c-border); border-radius: 8px;
+            min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 1000; padding: 0.4rem 0;
         }
-        .avatar-menu.show {
-            display: block;
-        }
-        .avatar-menu-header {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--c-border);
-            margin-bottom: 0.5rem;
-        }
-        .avatar-menu-name {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--c-text);
-        }
-        .avatar-menu-role {
-            font-size: 0.75rem;
-            color: var(--c-muted);
-            margin-top: 2px;
-        }
+        .avatar-menu.show { display: block; }
+        .avatar-menu-header { padding: 0.6rem 1rem; border-bottom: 1px solid var(--c-border); margin-bottom: 0.3rem; }
+        .avatar-menu-name { font-size: 0.9rem; font-weight: 600; color: var(--c-text); }
+        .avatar-menu-role { font-size: 0.7rem; color: var(--c-muted); margin-top: 1px; }
         .avatar-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0.6rem 1rem;
-            font-size: 0.9rem;
-            color: var(--c-text);
-            text-decoration: none;
-            transition: background-color 0.2s;
+            display: flex; align-items: center; gap: 8px;
+            padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--c-text);
+            text-decoration: none; transition: background 0.15s;
         }
-        .avatar-menu-item:hover {
-            background-color: #F8F9FA;
-            color: var(--c-primary);
-        }
-        .avatar-menu-item.danger:hover {
-            color: var(--c-danger);
-        }
+        .avatar-menu-item:hover { background: #F8F9FA; color: var(--c-primary); }
+        .avatar-menu-item.danger:hover { color: var(--c-danger); }
 
-        @@media (max-width: 768px) {
-            .moodle-nav-links {
-                display: none; /* Hide on mobile for simplicity or implement offcanvas */
-            }
-        }
+        /* Main content area */
+        .main-wrap { min-height: calc(100vh - 56px); background: var(--c-page-bg); }
+        .main-content { padding: 1.5rem; max-width: 1400px; margin: 0 auto; width: 100%; }
     </style>
 </head>
 <body style="background-color: var(--c-page-bg);">
@@ -184,29 +140,67 @@
     }
 }
 
-<!-- Top Navbar (Moodle Style) -->
-<nav class="moodle-navbar">
-    <div style="display: flex; align-items: center;">
-        <a href="/" class="moodle-brand">
-            <span class="moodle-brand-name">SmartExam AI</span>
-            <span class="moodle-brand-tag">EXAMINATION PLATFORM</span>
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar Drawer -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">SmartExam AI</div>
+        <div class="sidebar-brand-sub">Examination Platform</div>
+    </div>
+
+    <nav class="sidebar-nav">
+        @if (User.IsInRole("Teacher"))
+        {
+            <div class="sidebar-section">Main</div>
+            <a href="@Url.Action("Index", "Dashboard", new { area = "Teacher" })" class="sidebar-link @(IsActive("Dashboard") ? "active" : "")" onclick="closeSidebar()">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+            <a href="@Url.Action("Index", "Courses", new { area = "Teacher" })" class="sidebar-link @(IsActive("Courses", "Exams") || IsActive("Results") ? "active" : "")" onclick="closeSidebar()">
+                <i class="bi bi-journal-text"></i> My Courses
+            </a>
+        }
+        else if (User.IsInRole("Student"))
+        {
+            <div class="sidebar-section">Main</div>
+            <a href="@Url.Action("Index", "Dashboard", new { area = "Student" })" class="sidebar-link @(IsActive("Dashboard") ? "active" : "")" onclick="closeSidebar()">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
+            <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="sidebar-link @(IsActive("Courses") || IsActive("Exam") ? "active" : "")" onclick="closeSidebar()">
+                <i class="bi bi-journal-text"></i> My Courses
+            </a>
+        }
+
+        <div class="sidebar-section">Account</div>
+        <a href="/Account/Profile" class="sidebar-link" onclick="closeSidebar()">
+            <i class="bi bi-person"></i> Profile
         </a>
-        
-        <div class="moodle-nav-links">
-            @if (User.IsInRole("Teacher"))
-            {
-                <a href="@Url.Action("Index", "Dashboard", new { area = "Teacher" })" class="@(IsActive("Dashboard") ? "active" : "")">Dashboard</a>
-                <a href="@Url.Action("Index", "Courses", new { area = "Teacher" })" class="@(IsActive("Courses", "Exams") || IsActive("Results") ? "active" : "")">My Courses</a>
-            }
-            else if (User.IsInRole("Student"))
-            {
-                <a href="@Url.Action("Index", "Dashboard", new { area = "Student" })" class="@(IsActive("Dashboard") ? "active" : "")">Dashboard</a>
-                <a href="@Url.Action("Index", "Courses", new { area = "Student" })" class="@(IsActive("Courses") || IsActive("Exam") ? "active" : "")">My Courses</a>
-            }
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="sidebar-avatar">@initials</div>
+            <div>
+                <div class="sidebar-uname">@fullName</div>
+                <div class="sidebar-urole">@role</div>
+            </div>
         </div>
     </div>
-    
-    <div style="display: flex; align-items: center; gap: 1rem;">
+</aside>
+
+<!-- Top Navbar -->
+<nav class="top-navbar">
+    <div class="top-left">
+        <button class="drawer-toggle" onclick="toggleSidebar()" aria-label="Menu">
+            <i class="bi bi-list"></i>
+        </button>
+        <a href="/" class="brand-link">
+            <span class="brand-name">SmartExam AI</span>
+        </a>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
         <div class="user-menu">
             <button id="avatar-btn" class="avatar-btn">@initials</button>
             <div id="avatar-menu" class="avatar-menu">
@@ -215,7 +209,7 @@
                     <div class="avatar-menu-role">@role</div>
                 </div>
                 <a href="/Account/Profile" class="avatar-menu-item">
-                    <i class="bi bi-person-circle"></i> Profile Settings
+                    <i class="bi bi-person-circle"></i> Profile
                 </a>
                 <form method="post" action="/Account/Logout" style="margin:0;">
                     @Html.AntiForgeryToken()
@@ -250,26 +244,33 @@
 <div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:8px;"></div>
 <script>
 function showToast(message, type = 'success') {
-  const colors = {
-    success: 'var(--c-success)',
-    danger:  'var(--c-danger)',
-    warning: 'var(--c-warning)'
-  };
+  const colors = { success: 'var(--c-success)', danger: 'var(--c-danger)', warning: 'var(--c-warning)' };
   const t = document.createElement('div');
   t.style.cssText = `background:#fff;border-left:4px solid ${colors[type]};padding:0.75rem 1.25rem;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);font-size:0.875rem;min-width:260px;color:var(--c-text);`;
   t.innerText = message;
   document.getElementById('toast-container').appendChild(t);
   setTimeout(() => t.remove(), 4000);
 }
-  document.getElementById('avatar-btn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    const m = document.getElementById('avatar-menu');
-    m.classList.toggle('show');
-  });
-  document.addEventListener('click', () => {
-    const menu = document.getElementById('avatar-menu');
-    if (menu) menu.classList.remove('show');
-  });
+
+// Sidebar
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+// Avatar menu
+document.getElementById('avatar-btn').addEventListener('click', function(e) {
+  e.stopPropagation();
+  document.getElementById('avatar-menu').classList.toggle('show');
+});
+document.addEventListener('click', () => {
+  const menu = document.getElementById('avatar-menu');
+  if (menu) menu.classList.remove('show');
+});
 </script>
 </body>
 </html>

@@ -7,6 +7,8 @@ namespace SmartExamAI.ViewModels.Student
         public string Type { get; set; } = string.Empty;
         public int Marks { get; set; }
         public int OrderIndex { get; set; }
+        public int? SelectedOptionId { get; set; }
+        public string? TextAnswer { get; set; }
         public List<ExamOptionViewModel> Options { get; set; } = new List<ExamOptionViewModel>();
     }
 }

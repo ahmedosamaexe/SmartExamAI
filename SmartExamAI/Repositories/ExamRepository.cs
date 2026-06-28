@@ -187,6 +187,8 @@ namespace SmartExamAI.Repositories
                     .ThenInclude(e => e.Course)
                 .Include(s => s.Exam)
                     .ThenInclude(e => e.Questions)
+                .Include(s => s.Answers)
+                    .ThenInclude(a => a.Question)
                 .Where(s => s.StudentId == studentId)
                 .ToListAsync();
         }

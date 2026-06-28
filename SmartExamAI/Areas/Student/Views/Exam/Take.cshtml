@@ -246,6 +246,11 @@ var questions = JSON.parse(document.getElementById('questionData').textContent);
 var total = questions.length;
 var currentIndex = 0;
 var answers = {};   // qid -> { selectedOptionId, textAnswer }
+questions.forEach(function(q) {
+    if (q.selectedOptionId || q.textAnswer) {
+        answers[q.questionId] = { selectedOptionId: q.selectedOptionId || null, textAnswer: q.textAnswer || null };
+    }
+});
 var flagged = {};
 var remainingSeconds = @Model.TotalSeconds;
 var isSubmitting = false;

@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Edit Exam";
     var courseTitle = ViewData["CourseTitle"]?.ToString() ?? "Course";
-    var startValue = Model.StartTime.ToString("yyyy-MM-dd HH:mm");
+    var startValue = Model.StartTime == default ? string.Empty : Model.StartTime.ToString("yyyy-MM-ddTHH:mm");
 }
 
 @section Breadcrumb {
@@ -84,7 +84,14 @@
             </div>
             <div>
                 <label class="field-label">Start Time</label>
-                <input asp-for="StartTime" class="field-input" id="startTimeInput" value="@startValue" autocomplete="off" />
+                <div class="duration-pills" style="margin-bottom: 6px;">
+                    <span class="dur-pill start-pill" data-offset="0">Now</span>
+                    <span class="dur-pill start-pill" data-offset="10">In 10m</span>
+                    <span class="dur-pill start-pill" data-offset="30">In 30m</span>
+                    <span class="dur-pill start-pill" data-offset="60">In 1h</span>
+                    <span class="dur-pill start-pill" data-offset="1440">Tomorrow</span>
+                </div>
+                <input asp-for="StartTime" type="datetime-local" class="field-input" id="startTimeInput" value="@startValue" />
                 <span asp-validation-for="StartTime" style="color: var(--c-danger); font-size: 11px;"></span>
             </div>
             <div class="full-width">
@@ -130,7 +137,19 @@
     var startTimeInput = document.getElementById('startTimeInput');
     var durationInput = document.getElementById('durationInput');
 
-    flatpickr(startTimeInput, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true, minuteIncrement: 5 });
+    function setStartTimeOffset(mins) {
+        var d = new Date(Date.now() + mins * 60000);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        startTimeInput.value = d.toISOString().slice(0, 16);
+        document.querySelectorAll('.start-pill').forEach(function(p) {
+            p.classList.toggle('active', Number(p.getAttribute('data-offset')) === mins);
+        });
+    }
+    document.querySelectorAll('.start-pill').forEach(function(pill) {
+        pill.addEventListener('click', function() {
+            setStartTimeOffset(Number(pill.getAttribute('data-offset')));
+        });
+    });
 
     function updatePills() {
         var val = durationInput.value;

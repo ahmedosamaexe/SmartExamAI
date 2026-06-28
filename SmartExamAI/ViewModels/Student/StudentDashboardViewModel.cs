@@ -28,5 +28,8 @@ namespace SmartExamAI.ViewModels.Student
         public int TotalScore { get; set; }
         public int MaxScore { get; set; }
         public int SubmissionId { get; set; }
+        public bool ResultsPublished { get; set; }
+        public bool IsTerminated { get; set; }
+        public bool HasPendingGrading { get; set; }
     }
 }
