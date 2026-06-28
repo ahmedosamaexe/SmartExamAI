@@ -1,0 +1,155 @@
+:root {
+  --c-page-bg:        #F0F2F5;
+  --c-card:           #FFFFFF;
+  --c-border:         #DEE2E6;
+
+  --c-primary:        #1177d1;
+  --c-primary-hover:  #0f62ab;
+  --c-primary-light:  #e6f1f9;
+
+  --c-sidebar-bg:     #2E3338;
+  --c-sidebar-active: #1177d1;
+  --c-sidebar-text:   #ADB5BD;
+
+  --c-danger:         #DC3545;
+  --c-warning:        #FFC107;
+  --c-success:        #28A745;
+
+  --c-text:           #212529;
+  --c-muted:          #6C757D;
+}
+
+.badge-primary  { background: #FFF3E0; color: #E06D00; }
+.badge-success  { background: #D4EDDA; color: #155724; }
+.badge-danger   { background: #F8D7DA; color: #721C24; }
+.badge-warning  { background: #FFF3CD; color: #856404; }
+.badge-muted    { background: #F3F4F6; color: #4B5563; }
+.btn-primary-app { background: var(--c-primary); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: background .15s; }
+.btn-primary-app:hover { background: var(--c-primary-hover); }
+.btn-danger-app  { background: var(--c-danger); color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.text-muted-sm  { font-size: 12px; color: var(--c-muted); }
+.no-select      { user-select: none; -webkit-user-select: none; }
+.empty-state    { text-align: center; padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; }
+
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem var(--c-primary);
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.card-section-alt  { background: var(--c-primary-light); }
+.card-section-warm { background: #FFF7F4; }
+
+.stat-card-teal {
+  background: var(--c-primary-light);
+  border-left: 3px solid var(--c-primary);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+.stat-card-teal .stat-number { color: var(--c-primary-hover); font-size: 2rem; font-weight: 700; }
+.stat-card-teal .stat-label  { color: var(--c-primary); font-size: 0.8rem; }
+
+.stat-card-warning {
+  background: #FFF3CD;
+  border-left: 3px solid var(--c-warning);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+.stat-card-warning .stat-number { color: #856404; font-size: 2rem; font-weight: 700; }
+.stat-card-warning .stat-label  { color: #856404; font-size: 0.8rem; }
+
+.btn-submit-exam {
+  background: var(--c-danger);
+  color: #FFFFFF;
+  border: none;
+}
+.btn-submit-exam:hover { background: #C82333; color: #FFFFFF; }
+
+.timer-normal  { color: var(--c-success); font-weight: 600; }
+.timer-warning { color: var(--c-warning); font-weight: 600; }
+.timer-danger  { color: var(--c-danger); font-weight: 600; }
+
+.card { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.field-required::after {
+  content: " *";
+  color: var(--c-danger);
+  font-size: 0.85em;
+}
+
+.btn-loading {
+  opacity: 0.7;
+  pointer-events: none;
+  position: relative;
+}
+.btn-loading::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 8px;
+  animation: btn-spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+/* Card custom style */
+.card-custom {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+}
+
+/* Small buttons */
+.btn-sm-primary {
+  background: var(--c-primary);
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-sm-primary:hover { background: var(--c-primary-hover); }
+
+.btn-sm-outline {
+  background: transparent;
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-sm-outline:hover { background: #F3F4F6; }
+
+.border-custom { border: 1px solid var(--c-border) !important; }

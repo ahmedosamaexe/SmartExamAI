@@ -1,0 +1,351 @@
+@model SmartExamAI.ViewModels.Teacher.CourseDetailsViewModel
+@{
+    ViewData["Title"] = Model.Title;
+
+
+    string FormatDuration(int minutes)
+    {
+        var hours = minutes / 60;
+        var remainder = minutes % 60;
+        if (hours > 0 && remainder > 0) return $"{hours}h {remainder}min";
+        if (hours > 0) return $"{hours}h";
+        return $"{minutes}min";
+    }
+
+    string GetStatusText(SmartExamAI.ViewModels.Teacher.ExamRowViewModel exam)
+    {
+        if (!exam.IsPublished) return "Draft";
+        return exam.Status;
+    }
+
+    string GetStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Draft" => "badge-muted",
+            "Upcoming" => "badge-warning",
+            "Active" => "badge-success",
+            "Ended" => "badge-danger",
+            _ => "badge-muted"
+        };
+    }
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Courses</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Course Details</li>
+  </ol>
+</nav>
+}
+
+
+<style>
+    /* ── Top section ── */
+    .course-top {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        padding: 22px 26px;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .course-top-left {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    .course-accent {
+        width: 4px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        align-self: stretch;
+    }
+    .course-top h1 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin: 0 0 4px 0;
+    }
+    .course-top-tagline {
+        font-size: 13px;
+        color: var(--c-muted);
+        margin-bottom: 10px;
+    }
+    .course-top-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .course-top-code {
+        font-size: 12px;
+        color: var(--c-muted);
+    }
+    .btn-edit-course {
+        font-size: 13px;
+        padding: 7px 16px;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        background: var(--c-card);
+        color: var(--c-text);
+        text-decoration: none;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: border-color .15s;
+    }
+    .btn-edit-course:hover {
+        border-color: var(--c-primary);
+        color: var(--c-text);
+    }
+
+    /* ── Card block (students, exams) ── */
+    .card-block {
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-block-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--c-border);
+    }
+    .card-block-header h2 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* ── Table ── */
+    .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .detail-table th {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--c-muted);
+        font-weight: 600;
+        padding: 10px 18px;
+        text-align: left;
+        border-bottom: 1px solid var(--c-border);
+    }
+    .detail-table td {
+        padding: 12px 18px;
+        font-size: 13px;
+        color: var(--c-text);
+        border-bottom: 1px solid var(--c-border);
+        vertical-align: middle;
+    }
+    .detail-table tr:last-child td {
+        border-bottom: none;
+    }
+    .detail-table .cell-name {
+        font-weight: 500;
+    }
+    .detail-table .cell-sub {
+        font-size: 11px;
+        color: var(--c-muted);
+        margin-top: 1px;
+    }
+    .detail-table .cell-muted {
+        font-size: 12px;
+        color: var(--c-muted);
+    }
+
+    /* ── Action buttons ── */
+    .btn-sm-primary {
+        font-size: 12px;
+        padding: 5px 14px;
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-sm-primary:hover {
+        background: var(--c-primary-hover);
+        color: #fff;
+    }
+    .btn-sm-danger {
+        font-size: 12px;
+        padding: 5px 10px;
+        border: 1px solid var(--c-danger);
+        border-radius: 6px;
+        background: none;
+        color: var(--c-danger);
+        cursor: pointer;
+        font-weight: 500;
+        transition: all .15s;
+    }
+    .btn-sm-danger:hover {
+        background: var(--c-danger);
+        color: #fff;
+    }
+    .btn-sm-outline {
+        font-size: 12px;
+        padding: 5px 12px;
+        border: 1px solid var(--c-border);
+        border-radius: 6px;
+        background: var(--c-card);
+        color: var(--c-text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: border-color .15s;
+    }
+    .btn-sm-outline:hover {
+        border-color: var(--c-primary);
+        color: var(--c-text);
+    }
+    .actions-cell {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        align-items: center;
+    }
+</style>
+
+<!-- Top section -->
+<div class="course-top">
+    <div class="course-top-left">
+        <div class="course-accent" style="background: @Model.Color;"></div>
+        <div>
+            <h1>@Model.Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.Tagline))
+            {
+                <div class="course-top-tagline">@Model.Tagline</div>
+            }
+            <div class="course-top-meta">
+                @if (!string.IsNullOrWhiteSpace(Model.Category))
+                {
+                    <span class="badge-muted">@Model.Category</span>
+                }
+                <span class="course-top-code">Code: @Model.EnrollCode</span>
+            </div>
+        </div>
+    </div>
+    <a href="@Url.Action("Edit", "Courses", new { area = "Teacher", id = Model.CourseId })"
+       class="btn-edit-course">Edit Course</a>
+</div>
+
+<!-- Students section -->
+<div class="card-block" style="margin-bottom: 16px;">
+    <div class="card-block-header">
+        <h2>
+            Enrolled Students
+            <span class="badge-muted">@Model.Students.Count</span>
+        </h2>
+        <a href="@Url.Action("AddStudentManual", "Courses", new { area = "Teacher", id = Model.CourseId })"
+           class="btn-sm-primary">Add Student</a>
+    </div>
+    @if (!Model.Students.Any())
+    {
+        <div class="empty-state">No students enrolled yet.</div>
+    }
+    else
+    {
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Email</th>
+                    <th>Enrolled</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var student in Model.Students)
+                {
+                    <tr>
+                        <td>
+                            <div class="cell-name">@student.FullName</div>
+                            <div class="cell-sub">Student</div>
+                        </td>
+                        <td class="cell-muted">@student.Email</td>
+                        <td class="cell-muted">@student.EnrolledAt.ToLocalTime().ToString("MMM d, yyyy")</td>
+                        <td style="text-align: right;">
+                            <form asp-action="RemoveStudent" asp-route-id="@Model.CourseId" method="post"
+                                  onsubmit="return confirm('Remove this student from the course?');"
+                                  style="display: inline;">
+                                <input type="hidden" name="studentId" value="@student.Id" />
+                                <button type="submit" class="btn-sm-danger">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<!-- Exams section -->
+<div class="card-block">
+    <div class="card-block-header">
+        <h2>Exams</h2>
+        <a href="@Url.Action("Create", "Exams", new { area = "Teacher", courseId = Model.CourseId })"
+           class="btn-sm-primary">Create Exam</a>
+    </div>
+    @if (!Model.Exams.Any())
+    {
+        <div class="empty-state">No exams created yet.</div>
+    }
+    else
+    {
+        <table class="detail-table">
+            <thead>
+                <tr>
+                    <th>Exam</th>
+                    <th>Questions</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var exam in Model.Exams)
+                {
+                    var status = GetStatusText(exam);
+                    var badgeClass = GetStatusBadge(status);
+                    <tr>
+                        <td class="cell-name">@exam.Title</td>
+                        <td class="cell-muted">@exam.QuestionCount</td>
+                        <td class="cell-muted">@FormatDuration(exam.DurationMinutes)</td>
+                        <td><span class="@badgeClass">@status</span></td>
+                        <td>
+                            <div class="actions-cell">
+                                <a href="@Url.Action("Details", "Exams", new { area = "Teacher", id = exam.Id })"
+                                   class="btn-sm-outline">Details</a>
+                                @if (exam.SubmissionCount > 0)
+                                {
+                                    <a href="@Url.Action("GradeExam", "Results", new { area = "Teacher", examId = exam.Id })"
+                                       class="btn-sm-primary" style="background: var(--c-warning);">Grade</a>
+                                }
+                                @if (exam.SubmissionCount == 0)
+                                {
+                                    <a href="@Url.Action("Edit", "Exams", new { area = "Teacher", id = exam.Id })"
+                                       class="btn-sm-outline">Edit</a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+

@@ -1,0 +1,163 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<style>
+    .auth-heading {
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin-bottom: 6px;
+    }
+    .auth-subheading {
+        font-size: 13px;
+        color: var(--c-muted);
+        margin-bottom: 28px;
+    }
+    .field-group {
+        margin-bottom: 20px;
+    }
+    .field-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+    .field-input {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+        color: var(--c-text);
+        background: #fff;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        outline: none;
+        transition: border-color .15s;
+    }
+    .field-input:focus {
+        border-color: var(--c-primary);
+        box-shadow: 0 0 0 3px rgba(249,128,18,0.12);
+    }
+    .field-input-wrap {
+        position: relative;
+    }
+    .field-input-wrap .field-input {
+        padding-right: 42px;
+    }
+    .toggle-pass-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--c-muted);
+        font-size: 16px;
+        padding: 0;
+        line-height: 1;
+    }
+    .field-error {
+        font-size: 12px;
+        color: var(--c-danger);
+        margin-top: 4px;
+        display: block;
+    }
+    .error-box {
+        background: #F8D7DA;
+        color: #721C24;
+        border-radius: 7px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+    .btn-auth-submit {
+        width: 100%;
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background .15s;
+    }
+    .btn-auth-submit:hover {
+        background: var(--c-primary-hover);
+    }
+    .auth-footer-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 13px;
+        color: var(--c-muted);
+    }
+    .auth-footer-link a {
+        color: var(--c-primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    .auth-footer-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<h2 class="auth-heading">Welcome back</h2>
+<p class="auth-subheading">Sign in to your account to continue</p>
+
+@if (TempData["Error"] != null)
+{
+    <div class="error-box">@TempData["Error"]</div>
+}
+
+<form asp-action="Login" method="post">
+    <div class="field-group">
+        <label class="field-label" asp-for="Email">Email Address</label>
+        <input class="field-input" asp-for="Email" type="email" placeholder="you@example.com" autocomplete="email" />
+        <span class="field-error" asp-validation-for="Email"></span>
+    </div>
+
+    <div class="field-group">
+        <label class="field-label" asp-for="Password">Password</label>
+        <div class="field-input-wrap">
+            <input class="field-input" asp-for="Password" type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password" />
+            <button type="button" class="toggle-pass-btn" onclick="togglePassword()">
+                <i class="bi bi-eye" id="toggleIcon"></i>
+            </button>
+        </div>
+        <span class="field-error" asp-validation-for="Password"></span>
+    </div>
+
+    <div style="display:flex;align-items:center;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-muted);cursor:pointer">
+            <input type="checkbox" asp-for="RememberMe" style="accent-color:var(--c-primary)"> Remember me
+        </label>
+    </div>
+
+    <button type="submit" class="btn-auth-submit">Sign in</button>
+</form>
+
+<div class="auth-footer-link">
+    Don't have an account? <a asp-action="Register" asp-controller="Account">Register here</a>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePassword() {
+            var input = document.getElementById('passwordInput');
+            var icon = document.getElementById('toggleIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+    </script>
+}

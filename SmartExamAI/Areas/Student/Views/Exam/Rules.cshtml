@@ -1,0 +1,146 @@
+@model SmartExamAI.ViewModels.Student.ExamRulesViewModel
+@{
+    ViewData["Title"] = "Exam Rules: " + Model.Title;
+    Layout = "_ExamLayout";
+}
+
+<style>
+    .rules-container {
+        max-width: 600px;
+        margin: 60px auto;
+        background: var(--c-card);
+        border: 1px solid var(--c-border);
+        border-radius: 10px;
+        padding: 40px;
+    }
+    .rules-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .rules-header h2 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--c-text);
+        margin-bottom: 8px;
+    }
+    .rules-header p {
+        font-size: 14px;
+        color: var(--c-muted);
+        margin: 0;
+    }
+    .meta-boxes {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 30px;
+        justify-content: center;
+    }
+    .meta-box {
+        background: #F8F9FA;
+        border-radius: 8px;
+        padding: 12px 20px;
+        text-align: center;
+        border: 1px solid var(--c-border);
+    }
+    .meta-label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--c-muted);
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    .meta-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--c-text);
+    }
+    .rules-list {
+        background: #F8F9FA;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 30px;
+        border: 1px solid var(--c-border);
+    }
+    .rules-list h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--c-text);
+        margin-bottom: 16px;
+        margin-top: 0;
+    }
+    .rules-list ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--c-text);
+        font-size: 14px;
+    }
+    .rules-list li {
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+    .rules-list li:last-child {
+        margin-bottom: 0;
+    }
+    .action-row {
+        text-align: center;
+    }
+    .btn-start {
+        display: inline-block;
+        padding: 12px 30px;
+        background: var(--c-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background .2s;
+    }
+    .btn-start:hover {
+        background: var(--c-primary-hover);
+        color: #fff;
+    }
+</style>
+
+<div class="rules-container">
+    <div class="rules-header">
+        <h2>@Model.Title</h2>
+        <p>@Model.CourseName</p>
+    </div>
+
+    <div class="meta-boxes">
+        <div class="meta-box">
+            <div class="meta-label">Duration</div>
+            <div class="meta-value">@Model.DurationMinutes min</div>
+        </div>
+        <div class="meta-box">
+            <div class="meta-label">Violations Allowed</div>
+            <div class="meta-value">@Model.ViolationThreshold</div>
+        </div>
+    </div>
+
+    <div class="rules-list">
+        <h3>Exam Rules</h3>
+        <ul>
+            <li>Switching tabs during the exam will be recorded as a violation</li>
+            <li>The exam runs in fullscreen mode — exiting fullscreen is a violation</li>
+            <li>Copying, pasting, and right-clicking are disabled during the exam</li>
+            <li>All violations are logged and visible to your teacher</li>
+            <li>The exam timer starts immediately after you click Start</li>
+            <li>Make sure to submit before the timer runs out</li>
+        </ul>
+    </div>
+
+    <div class="action-row">
+        <a href="@Url.Action("Take", "Exam", new { area = "Student", examId = Model.ExamId })" class="btn-start" id="startExamBtn" onclick="enterFullscreen()">I Understand, Start Exam</a>
+    </div>
+</div>
+
+<script>
+    function enterFullscreen() {
+        var el = document.documentElement;
+        if (el.requestFullscreen) { el.requestFullscreen(); }
+        else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+        else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+    }
+</script>

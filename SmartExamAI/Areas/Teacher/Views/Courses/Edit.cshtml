@@ -1,0 +1,61 @@
+@model SmartExamAI.ViewModels.Teacher.EditCourseViewModel
+@{
+    ViewData["Title"] = "Edit Course";
+    var enrollCode = ViewData["EnrollCode"]?.ToString() ?? "";
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Courses</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Edit Course</li>
+  </ol>
+</nav>
+}
+
+
+
+
+
+
+<h1 class="text-heading mb-4" style="font-size: 24px; font-weight: 700;">Edit Course</h1>
+
+<div class="card-custom p-4 p-md-5 mx-auto" style="max-width: 820px;">
+    <div style="max-width: 720px; margin: 0 auto;">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+            <div class="row g-4">
+                <div class="col-12">
+                    <label asp-for="EnrollCode" class="form-label fw-semibold">Enroll Code</label>
+                    <input asp-for="EnrollCode" class="form-control bg-light font-monospace" />
+                    <span asp-validation-for="EnrollCode" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Title" class="form-label fw-semibold">Title</label>
+                    <input asp-for="Title" class="form-control bg-light" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label fw-semibold">Description <span style="font-weight:400;color:var(--c-muted);font-size:12px;">(optional)</span></label>
+                    <textarea asp-for="Description" class="form-control bg-light" rows="5"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-5 border-top pt-4">
+                <a href="@Url.Action("Details", "Courses", new { area = "Teacher", id = Model.Id })" class="btn btn-light border-custom">Cancel</a>
+                <button type="submit" class="btn btn-primary-custom">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+

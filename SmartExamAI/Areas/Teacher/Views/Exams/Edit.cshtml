@@ -1,0 +1,152 @@
+@model SmartExamAI.ViewModels.Teacher.EditExamViewModel
+@{
+    ViewData["Title"] = "Edit Exam";
+    var courseTitle = ViewData["CourseTitle"]?.ToString() ?? "Course";
+    var startValue = Model.StartTime.ToString("yyyy-MM-dd HH:mm");
+}
+
+@section Breadcrumb {
+<nav aria-label="breadcrumb" style="font-size:0.85rem;margin-bottom:1rem;">
+  <ol class="breadcrumb" style="background:none;padding:0;margin:0;">
+    <li class="breadcrumb-item"><a href="/Teacher/Dashboard" style="color:var(--c-primary);">Home</a></li>
+    <li class="breadcrumb-item"><a href="#" style="color:var(--c-primary);">Exams</a></li>
+    <li class="breadcrumb-item active" style="color:var(--c-muted);">Edit Exam</li>
+  </ol>
+</nav>
+}
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
+<style>
+    .flatpickr-day.selected,
+    .flatpickr-day.startRange,
+    .flatpickr-day.endRange,
+    .flatpickr-day.selected:hover { background: var(--c-primary); border-color: var(--c-primary); }
+    .flatpickr-day.today { border-color: var(--c-warning); }
+    .flatpickr-time input:hover,
+    .flatpickr-time .flatpickr-am-pm:hover,
+    .flatpickr-time input:focus,
+    .flatpickr-time .flatpickr-am-pm:focus { background: var(--c-page-bg); }
+
+    .exam-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px; padding: 22px 26px; max-width: 860px; margin: 0 auto; }
+    .exam-card h2 { font-size: 15px; font-weight: 600; color: var(--c-text); margin: 0 0 16px 0; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid .full-width { grid-column: 1 / -1; }
+    .field-label { font-size: 12px; font-weight: 600; color: var(--c-text); margin-bottom: 6px; display: block; }
+    .field-hint { font-size: 11px; color: var(--c-muted); margin-top: 4px; }
+    .field-input { width: 100%; padding: 8px 12px; border: 1px solid var(--c-border); border-radius: 7px; font-size: 13px; color: var(--c-text); background: var(--c-card); outline: none; transition: border-color .15s; }
+    .field-input:focus { border-color: var(--c-primary); }
+    .field-readonly { background: var(--c-page-bg); color: var(--c-muted); cursor: default; }
+    .field-suffix { display: flex; align-items: center; }
+    .field-suffix .field-input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .field-suffix-label { padding: 8px 12px; border: 1px solid var(--c-border); border-left: none; border-radius: 0 7px 7px 0; font-size: 12px; color: var(--c-muted); background: var(--c-page-bg); white-space: nowrap; }
+
+    .duration-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .dur-pill { padding: 4px 14px; border: 1px solid var(--c-border); border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--c-text); background: var(--c-card); cursor: pointer; transition: all .15s; }
+    .dur-pill:hover { border-color: var(--c-primary); }
+    .dur-pill.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+
+    .toggle-switch { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+    .toggle-switch input { display: none; }
+    .toggle-track { width: 38px; height: 20px; border-radius: 10px; background: var(--c-border); position: relative; transition: background .2s; }
+    .toggle-switch input:checked + .toggle-track { background: var(--c-primary); }
+    .toggle-track::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--c-card); top: 2px; left: 2px; transition: transform .2s; }
+    .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+
+    .validation-box { background: #F8D7DA; color: #721C24; border-radius: 7px; padding: 10px 14px; font-size: 12px; margin-bottom: 16px; }
+    .btn-sm-primary { font-size: 13px; padding: 8px 20px; background: var(--c-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background .15s; }
+    .btn-sm-primary:hover { background: var(--c-primary-hover); }
+    .btn-sm-outline { font-size: 13px; padding: 8px 16px; border: 1px solid var(--c-border); border-radius: 6px; background: var(--c-card); color: var(--c-text); font-weight: 500; text-decoration: none; }
+
+    @@media (max-width: 767px) { .form-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="exam-card">
+    <h2>Edit Exam</h2>
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="CourseId" />
+        <div asp-validation-summary="All" class="validation-box" style="@(ViewContext.ModelState.IsValid ? "display:none;" : "")"></div>
+
+        <div class="form-grid">
+            <div class="full-width">
+                <label class="field-label">Title</label>
+                <input asp-for="Title" class="field-input" />
+                <span asp-validation-for="Title" style="color: var(--c-danger); font-size: 11px;"></span>
+            </div>
+            <div>
+                <label class="field-label">Course</label>
+                <input type="text" class="field-input field-readonly" value="@courseTitle" readonly />
+            </div>
+            <div>
+                <label class="field-label">Start Time</label>
+                <input asp-for="StartTime" class="field-input" id="startTimeInput" value="@startValue" autocomplete="off" />
+                <span asp-validation-for="StartTime" style="color: var(--c-danger); font-size: 11px;"></span>
+            </div>
+            <div class="full-width">
+                <label class="field-label">Duration</label>
+                <div class="duration-pills">
+                    <span class="dur-pill" data-minutes="15">15 min</span>
+                    <span class="dur-pill" data-minutes="30">30 min</span>
+                    <span class="dur-pill" data-minutes="45">45 min</span>
+                    <span class="dur-pill" data-minutes="60">60 min</span>
+                    <span class="dur-pill" data-minutes="90">90 min</span>
+                    <span class="dur-pill" data-minutes="120">120 min</span>
+                </div>
+                <div class="field-suffix">
+                    <input asp-for="DurationMinutes" class="field-input" id="durationInput" type="number" min="1" max="480" />
+                    <span class="field-suffix-label">minutes</span>
+                </div>
+                <span asp-validation-for="DurationMinutes" style="color: var(--c-danger); font-size: 11px;"></span>
+            </div>
+            <div>
+                <label class="field-label">Violation Threshold</label>
+                <input asp-for="ViolationThreshold" class="field-input" type="number" min="1" />
+                <div class="field-hint">Auto-terminates when student reaches this count</div>
+                <span asp-validation-for="ViolationThreshold" style="color: var(--c-danger); font-size: 11px;"></span>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <label class="toggle-switch">
+                    <input asp-for="QuestionRandomization" type="checkbox" />
+                    <span class="toggle-track"></span>
+                    <span class="field-label" style="margin: 0;">Question Randomization</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--c-border);">
+            <a href="@Url.Action("Details", "Exams", new { area = "Teacher", id = Model.Id })" class="btn-sm-outline">Cancel</a>
+            <button type="submit" class="btn-sm-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    var startTimeInput = document.getElementById('startTimeInput');
+    var durationInput = document.getElementById('durationInput');
+
+    flatpickr(startTimeInput, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true });
+
+    function updatePills() {
+        var val = durationInput.value;
+        document.querySelectorAll('.dur-pill').forEach(function(p) {
+            p.classList.toggle('active', p.getAttribute('data-minutes') === val);
+        });
+    }
+
+    document.querySelectorAll('.dur-pill').forEach(function(pill) {
+        pill.addEventListener('click', function() {
+            durationInput.value = pill.getAttribute('data-minutes');
+            updatePills();
+        });
+    });
+
+    durationInput.addEventListener('input', updatePills);
+    updatePills();
+</script>
+

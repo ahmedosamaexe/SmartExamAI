@@ -1,0 +1,503 @@
+@model SmartExamAI.ViewModels.Student.TakeExamViewModel
+@{
+    Layout = "~/Areas/Student/Views/Shared/_ExamLayout.cshtml";
+    ViewData["Title"] = Model.ExamTitle;
+}
+
+<style>
+    * { box-sizing: border-box; }
+
+    .exam-page { display: flex; min-height: 100vh; }
+
+    /* === Main === */
+    .exam-main { flex: 1; display: flex; flex-direction: column; }
+
+    .exam-topbar {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--c-border);
+    }
+    .exam-topbar-title { font-size: 15px; font-weight: 600; color: var(--c-text); }
+    .exam-topbar-course { font-size: 12px; color: var(--c-muted); margin-top: 2px; }
+
+    .question-area { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 32px 24px; }
+    .question-card {
+        background: #fff; border: 1px solid var(--c-border); border-radius: 10px;
+        width: 100%; max-width: 680px; overflow: hidden;
+    }
+    .question-card-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 14px 20px; background: #F8F9FA; border-bottom: 1px solid var(--c-border);
+    }
+    .q-info { display: flex; align-items: center; gap: 12px; }
+    .q-number { font-weight: 700; font-size: 14px; color: var(--c-text); }
+    .q-marks { color: var(--c-muted); font-size: 12px; }
+    .q-badge { font-size: 11px; padding: 2px 10px; border-radius: 10px; font-weight: 500; }
+    .q-badge-not { background: #FFF3CD; color: #856404; }
+    .q-badge-done { background: #D4EDDA; color: #155724; }
+
+    .btn-flag {
+        background: none; border: none; cursor: pointer; color: var(--c-muted);
+        font-size: 13px; display: flex; align-items: center; gap: 4px;
+        padding: 4px 8px; border-radius: 4px; transition: all .15s;
+    }
+    .btn-flag:hover { background: #F3F4F6; }
+    .btn-flag.flagged { color: var(--c-warning); }
+
+    .question-body { padding: 24px 20px; }
+    .question-text { font-size: 15px; line-height: 1.7; color: var(--c-text); margin-bottom: 20px; user-select: none; }
+
+    .option-row {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px 14px; border-radius: 8px; cursor: pointer;
+        transition: background .1s; margin-bottom: 6px; border: 1px solid transparent;
+    }
+    .option-row:hover { background: #F8F9FA; }
+    .option-row.selected { background: var(--c-primary-light); border-color: var(--c-primary); }
+    .custom-radio {
+        width: 18px; height: 18px; border-radius: 50%;
+        border: 2px solid var(--c-border); flex-shrink: 0; transition: all .15s; margin-top: 2px;
+    }
+    .option-row.selected .custom-radio { border-color: var(--c-primary); border-width: 5px; }
+    .hidden-radio { display: none; }
+    .option-text { font-size: 14px; color: var(--c-text); line-height: 1.5; }
+
+    .short-answer {
+        width: 100%; min-height: 120px; border: 1px solid var(--c-border);
+        border-radius: 8px; padding: 14px; font-size: 14px; font-family: inherit;
+        resize: vertical; outline: none; transition: border-color .15s;
+    }
+    .short-answer:focus { border-color: var(--c-primary); }
+
+    /* Bottom nav */
+    .question-footer {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 14px 20px; border-top: 1px solid var(--c-border);
+    }
+    .btn-nav {
+        padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+        cursor: pointer; transition: all .15s; border: 1px solid var(--c-border);
+        background: #fff; color: var(--c-text); display: flex; align-items: center; gap: 6px;
+    }
+    .btn-nav:hover { background: #F3F4F6; }
+    .btn-nav:disabled { opacity: .4; cursor: default; }
+    .q-counter { font-size: 12px; color: var(--c-muted); }
+
+    /* === Right nav panel === */
+    .nav-panel {
+        width: 250px; flex-shrink: 0; position: sticky; top: 0; height: 100vh;
+        background: #fff; border-left: 1px solid var(--c-border);
+        padding: 20px; overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .nav-section-title {
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .5px; color: var(--c-muted); margin-bottom: 12px;
+    }
+    .nav-timer {
+        text-align: center; padding: 14px; margin-bottom: 16px;
+        background: #F8F9FA; border-radius: 8px; border: 1px solid var(--c-border);
+    }
+    .nav-timer-label { font-size: 11px; color: var(--c-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .nav-timer-value { font-size: 22px; font-weight: 700; font-family: monospace; color: var(--c-primary); margin-top: 4px; }
+    .timer-warn { color: var(--c-warning) !important; }
+    .timer-danger { color: var(--c-danger) !important; }
+
+    .violations-box {
+        text-align: center; font-size: 12px; color: var(--c-muted);
+        padding: 8px; margin-bottom: 14px; background: #F8F9FA; border-radius: 6px;
+    }
+    .violations-box strong { color: var(--c-danger); }
+
+    .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 14px; }
+    .nav-dot {
+        height: 32px; line-height: 32px; text-align: center; border-radius: 4px;
+        font-size: 11px; font-weight: 600; cursor: pointer;
+        border: 1.5px solid var(--c-border); background: #fff; color: var(--c-muted);
+        transition: all .12s;
+    }
+    .nav-dot:hover { border-color: var(--c-primary); color: var(--c-primary); }
+    .nav-dot-current { border-color: var(--c-primary); color: var(--c-primary); font-weight: 700; box-shadow: 0 0 0 2px var(--c-primary-light); }
+    .nav-dot-answered { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+    .nav-dot-flagged { border-color: var(--c-warning); }
+    .nav-dot-answered.nav-dot-flagged { background: var(--c-primary); border-color: var(--c-warning); }
+
+    .nav-legend { font-size: 11px; color: var(--c-muted); margin-bottom: 14px; line-height: 2; }
+    .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+    .btn-finish {
+        width: 100%; padding: 12px; border: none; border-radius: 8px;
+        background: var(--c-primary); color: #fff; font-size: 14px;
+        font-weight: 600; cursor: pointer; transition: background .15s; margin-top: auto;
+    }
+    .btn-finish:hover { background: var(--c-primary-hover); }
+
+    /* Summary overlay */
+    .summary-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5); z-index: 2000;
+        align-items: center; justify-content: center;
+    }
+    .summary-card {
+        background: #fff; border-radius: 12px; max-width: 520px;
+        width: 95%; max-height: 80vh; overflow-y: auto; padding: 28px;
+    }
+    .summary-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+    .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+    .summary-table th { text-align: left; padding: 8px 10px; background: #F8F9FA; color: var(--c-muted); font-weight: 600; border-bottom: 1px solid var(--c-border); }
+    .summary-table td { padding: 8px 10px; border-bottom: 1px solid var(--c-border); }
+    .summary-actions { display: flex; gap: 10px; }
+    .btn-summary-back { flex: 1; padding: 11px; border: 1px solid var(--c-border); border-radius: 8px; background: #fff; font-size: 13px; cursor: pointer; }
+    .btn-summary-submit { flex: 1; padding: 11px; border: none; border-radius: 8px; background: var(--c-primary); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-summary-submit:hover { background: var(--c-primary-hover); }
+
+    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+
+    @@media (max-width: 768px) {
+        .nav-panel { display: none; }
+        .question-area { padding: 16px; }
+    }
+</style>
+
+<input type="hidden" id="hSubmissionId" value="@Model.SubmissionId" />
+<input type="hidden" id="hExamId" value="@Model.ExamId" />
+<input type="hidden" id="hViolationThreshold" value="@Model.ViolationThreshold" />
+<input type="hidden" id="hWarningCount" value="@Model.WarningCount" />
+@Html.AntiForgeryToken()
+<div id="toast-container"></div>
+
+<!-- Question data -->
+<script id="questionData" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Questions.Select(q => new { q.QuestionId, q.Text, q.Type, q.Marks, q.OrderIndex, q.Options }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }))</script>
+
+<div class="exam-page">
+    <div class="exam-main">
+        <div class="exam-topbar">
+            <div>
+                <div class="exam-topbar-title">@Model.ExamTitle</div>
+                <div class="exam-topbar-course">@Model.CourseTitle</div>
+            </div>
+        </div>
+
+        <div class="question-area">
+            <div class="question-card">
+                <div class="question-card-header">
+                    <div class="q-info">
+                        <span class="q-number" id="qNumber">Question 1</span>
+                        <span class="q-marks" id="qMarks"></span>
+                        <span class="q-badge q-badge-not" id="qBadge">Not yet answered</span>
+                    </div>
+                    <button type="button" class="btn-flag" id="btnFlag" onclick="toggleFlag()">
+                        <i class="bi bi-flag" id="flagIcon"></i> <span id="flagText">Flag</span>
+                    </button>
+                </div>
+                <div class="question-body" id="questionBody">
+                    <!-- rendered by JS -->
+                </div>
+                <div class="question-footer">
+                    <button class="btn-nav" id="btnPrev" onclick="goQuestion(currentIndex - 1)">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </button>
+                    <span class="q-counter" id="qCounter"></span>
+                    <button class="btn-nav" id="btnNext" onclick="goQuestion(currentIndex + 1)">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="nav-panel">
+        <div class="nav-section-title">Quiz Navigation</div>
+        <div class="nav-timer">
+            <div class="nav-timer-label">Time remaining</div>
+            <div class="nav-timer-value" id="timer">--:--</div>
+        </div>
+        <div class="violations-box">
+            Warnings: <strong><span id="vCount">@Model.WarningCount</span></strong> / @Model.ViolationThreshold
+        </div>
+        <div class="nav-grid" id="navGrid"></div>
+        <div class="nav-legend">
+            <span class="legend-dot" style="background:var(--c-primary);"></span> Answered<br/>
+            <span class="legend-dot" style="border:1.5px solid var(--c-border);background:#fff;"></span> Not answered<br/>
+            <span class="legend-dot" style="border:1.5px solid var(--c-warning);background:#fff;"></span> Flagged
+        </div>
+        <button type="button" class="btn-finish" onclick="openSummary()">Finish attempt...</button>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-overlay" id="summaryOverlay">
+    <div class="summary-card">
+        <div class="summary-title">Summary of attempt</div>
+        <table class="summary-table">
+            <thead><tr><th>#</th><th>Status</th><th>Flagged</th></tr></thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+        <div style="font-size:13px;color:var(--c-muted);margin-bottom:16px;">Once you submit, you cannot change your answers.</div>
+        <div class="summary-actions">
+            <button class="btn-summary-back" onclick="closeSummary()">Return to attempt</button>
+            <button class="btn-summary-submit" id="btnSubmitFinal">Submit all and finish</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var questions = JSON.parse(document.getElementById('questionData').textContent);
+var total = questions.length;
+var currentIndex = 0;
+var answers = {};   // qid -> { selectedOptionId, textAnswer }
+var flagged = {};
+var remainingSeconds = @Model.TotalSeconds;
+var isSubmitting = false;
+
+function token() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
+function subId() { return Number(document.getElementById('hSubmissionId').value); }
+
+// --- Render question ---
+function renderQuestion(idx) {
+    if (idx < 0 || idx >= total) return;
+    currentIndex = idx;
+    var q = questions[idx];
+    document.getElementById('qNumber').textContent = 'Question ' + (idx + 1);
+    document.getElementById('qMarks').textContent = q.marks + ' mark' + (q.marks > 1 ? 's' : '');
+    document.getElementById('qCounter').textContent = (idx + 1) + ' / ' + total;
+    document.getElementById('btnPrev').disabled = idx === 0;
+    document.getElementById('btnNext').disabled = idx === total - 1;
+
+    // Badge
+    var badge = document.getElementById('qBadge');
+    if (isAnswered(q.questionId)) { badge.className = 'q-badge q-badge-done'; badge.textContent = 'Answered'; }
+    else { badge.className = 'q-badge q-badge-not'; badge.textContent = 'Not yet answered'; }
+
+    // Flag
+    var f = flagged[q.questionId];
+    document.getElementById('btnFlag').className = 'btn-flag' + (f ? ' flagged' : '');
+    document.getElementById('flagIcon').className = f ? 'bi bi-flag-fill' : 'bi bi-flag';
+    document.getElementById('flagText').textContent = f ? 'Flagged' : 'Flag';
+
+    // Body
+    var body = document.getElementById('questionBody');
+    var html = '<div class="question-text">' + escHtml(q.text) + '</div>';
+
+    if (q.type === 'ShortAnswer') {
+        var val = answers[q.questionId]?.textAnswer || '';
+        html += '<textarea class="short-answer" id="answerInput" placeholder="Type your answer here..." onchange="onAnswer()" oninput="onAnswerDebounce()">' + escHtml(val) + '</textarea>';
+    } else {
+        var selId = answers[q.questionId]?.selectedOptionId;
+        q.options.forEach(function(o) {
+            var sel = selId === o.optionId ? ' selected' : '';
+            html += '<label class="option-row' + sel + '" onclick="selectOption(' + o.optionId + ', this)">';
+            html += '<input class="hidden-radio" type="radio" name="opt" value="' + o.optionId + '"' + (sel ? ' checked' : '') + '/>';
+            html += '<div class="custom-radio"></div>';
+            html += '<div class="option-text">' + escHtml(o.text) + '</div></label>';
+        });
+    }
+    body.innerHTML = html;
+    updateNavDots();
+}
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// --- Answer handling ---
+function isAnswered(qid) {
+    var a = answers[qid];
+    if (!a) return false;
+    if (a.textAnswer && a.textAnswer.trim()) return true;
+    if (a.selectedOptionId) return true;
+    return false;
+}
+
+function selectOption(optionId, el) {
+    var q = questions[currentIndex];
+    answers[q.questionId] = { selectedOptionId: optionId, textAnswer: null };
+    document.querySelectorAll('.option-row').forEach(function(r) { r.classList.remove('selected'); });
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+    updateBadge(q.questionId);
+    updateNavDots();
+    saveToServer(q.questionId);
+}
+
+function onAnswer() {
+    var q = questions[currentIndex];
+    var ta = document.getElementById('answerInput');
+    if (ta) { answers[q.questionId] = { selectedOptionId: null, textAnswer: ta.value }; }
+    updateBadge(q.questionId);
+    updateNavDots();
+    saveToServer(q.questionId);
+}
+
+var debounceTimer;
+function onAnswerDebounce() {
+    var q = questions[currentIndex];
+    var ta = document.getElementById('answerInput');
+    if (ta) answers[q.questionId] = { selectedOptionId: null, textAnswer: ta.value };
+    updateBadge(q.questionId);
+    updateNavDots();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function() { saveToServer(q.questionId); }, 1500);
+}
+
+function updateBadge(qid) {
+    var badge = document.getElementById('qBadge');
+    if (isAnswered(qid)) { badge.className = 'q-badge q-badge-done'; badge.textContent = 'Answered'; }
+    else { badge.className = 'q-badge q-badge-not'; badge.textContent = 'Not yet answered'; }
+}
+
+// --- Flag ---
+function toggleFlag() {
+    var qid = questions[currentIndex].questionId;
+    flagged[qid] = !flagged[qid];
+    var f = flagged[qid];
+    document.getElementById('btnFlag').className = 'btn-flag' + (f ? ' flagged' : '');
+    document.getElementById('flagIcon').className = f ? 'bi bi-flag-fill' : 'bi bi-flag';
+    document.getElementById('flagText').textContent = f ? 'Flagged' : 'Flag';
+    updateNavDots();
+}
+
+// --- Nav dots ---
+function buildNavDots() {
+    var grid = document.getElementById('navGrid');
+    grid.innerHTML = '';
+    questions.forEach(function(q, i) {
+        var d = document.createElement('div');
+        d.className = 'nav-dot';
+        d.textContent = i + 1;
+        d.onclick = function() { goQuestion(i); };
+        d.id = 'ndot-' + q.questionId;
+        grid.appendChild(d);
+    });
+}
+
+function updateNavDots() {
+    questions.forEach(function(q, i) {
+        var d = document.getElementById('ndot-' + q.questionId);
+        if (!d) return;
+        d.className = 'nav-dot';
+        if (i === currentIndex) d.classList.add('nav-dot-current');
+        if (isAnswered(q.questionId)) d.classList.add('nav-dot-answered');
+        if (flagged[q.questionId]) d.classList.add('nav-dot-flagged');
+    });
+}
+
+function goQuestion(idx) { 
+    if (currentIndex >= 0 && currentIndex < total) {
+        saveToServer(questions[currentIndex].questionId);
+    }
+    if (idx >= 0 && idx < total) {
+        renderQuestion(idx); 
+    }
+}
+
+// --- Server save ---
+function saveToServer(qid) {
+    var a = answers[qid] || {};
+    fetch('/Student/Exam/SaveAnswer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
+        body: JSON.stringify({ submissionId: subId(), questionId: Number(qid), selectedOptionId: a.selectedOptionId || null, textAnswer: a.textAnswer || null })
+    }).catch(function(){});
+}
+
+// --- Timer ---
+var timerEl = document.getElementById('timer');
+function tick() {
+    var s = Math.max(0, remainingSeconds);
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    timerEl.textContent = h > 0 ? h + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0')
+                                : String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+    timerEl.className = 'nav-timer-value' + (s <= 60 ? ' timer-danger' : s <= 300 ? ' timer-warn' : '');
+    if (s <= 0) { clearInterval(timerInterval); showToast('Time is up! Submitting...', 'warning'); setTimeout(submitExam, 1500); return; }
+    remainingSeconds--;
+}
+var timerInterval = setInterval(tick, 1000);
+tick();
+
+// --- Summary ---
+function openSummary() {
+    var tb = document.getElementById('summaryBody'); tb.innerHTML = '';
+    questions.forEach(function(q, i) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + (i+1) + '</td><td>' + (isAnswered(q.questionId) ? 'Answered' : 'Not yet answered') + '</td><td>' + (flagged[q.questionId] ? '⚑' : '') + '</td>';
+        tr.style.cursor = 'pointer';
+        tr.onclick = function() { closeSummary(); goQuestion(i); };
+        tb.appendChild(tr);
+    });
+    document.getElementById('summaryOverlay').style.display = 'flex';
+}
+function closeSummary() { document.getElementById('summaryOverlay').style.display = 'none'; }
+
+// --- Submit ---
+function submitExam() {
+    if (isSubmitting) return;
+    isSubmitting = true; window.examSubmitted = true;
+    var btn = document.getElementById('btnSubmitFinal');
+    if (btn) { btn.textContent = 'Submitting...'; btn.style.opacity = '0.6'; }
+
+    var payload = { submissionId: subId(), answers: questions.map(function(q) {
+        var a = answers[q.questionId] || {};
+        return { questionId: q.questionId, selectedOptionId: a.selectedOptionId || null, textAnswer: a.textAnswer || null };
+    })};
+
+    fetch('/Student/Exam/Submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { window.location.href = '/Student/Exam/Result/' + d.submissionId; return; }
+        isSubmitting = false; window.examSubmitted = false;
+        if (btn) { btn.textContent = 'Submit all and finish'; btn.style.opacity = '1'; }
+        showToast(d.message || 'Submit failed.', 'danger');
+    })
+    .catch(function() { isSubmitting = false; window.examSubmitted = false;
+        if (btn) { btn.textContent = 'Submit all and finish'; btn.style.opacity = '1'; }
+        showToast('Network error.', 'danger');
+    });
+}
+document.getElementById('btnSubmitFinal').addEventListener('click', submitExam);
+
+function showToast(msg, type) {
+    var c = document.getElementById('toast-container'), t = document.createElement('div');
+    t.style.cssText = 'background:' + (type==='danger'?'var(--c-danger)':type==='warning'?'var(--c-warning)':'var(--c-primary)') + ';color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;min-width:260px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+    t.textContent = msg; c.appendChild(t);
+    setTimeout(function() { t.remove(); }, 4000);
+}
+
+// --- Keyboard ---
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goQuestion(currentIndex + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goQuestion(currentIndex - 1); }
+});
+
+// --- Init ---
+buildNavDots();
+renderQuestion(0);
+// --- Simplified Proctoring ---
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden && !window.examSubmitted) {
+        fetch('/Student/Exam/RecordWarning', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
+            body: JSON.stringify({ submissionId: subId() })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                var vCountEl = document.getElementById('vCount');
+                if (vCountEl) vCountEl.textContent = d.warningCount;
+                if (d.isTerminated) {
+                    showToast('Exam terminated due to exceeding warning threshold.', 'danger');
+                    setTimeout(function() { window.location.href = '/Student/Exam/Terminated/' + subId(); }, 1500);
+                } else {
+                    showToast('Warning: You left the exam tab. Warnings: ' + d.warningCount, 'warning');
+                }
+            }
+        })
+        .catch(function(e) { console.error('Proctoring error:', e); });
+    }
+});
+</script>
+}
