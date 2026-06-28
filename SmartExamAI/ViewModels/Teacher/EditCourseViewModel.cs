@@ -22,10 +22,10 @@ namespace SmartExamAI.ViewModels.Teacher
 
         [Required(ErrorMessage = "Color is required.")]
         [MaxLength(20)]
-        public string Color { get; set; } = string.Empty;
+        public string Color { get; set; } = "#C8D8C8";
 
         [Required(ErrorMessage = "Category is required.")]
         [MaxLength(100)]
-        public string Category { get; set; } = string.Empty;
+        public string Category { get; set; } = "Other";
     }
 }
