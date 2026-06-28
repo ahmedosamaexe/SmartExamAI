@@ -56,6 +56,7 @@ namespace SmartExamAI.Repositories
         Task<IEnumerable<Submission>> GetNeedsGradingSubmissionsAsync(IEnumerable<int> courseIds);
         Task<IEnumerable<Submission>> GetRecentSubmissionsForCoursesAsync(IEnumerable<int> courseIds, int take);
         Task<int> GetDistinctStudentsCountForCoursesAsync(IEnumerable<int> courseIds);
+        Task<int> GetTotalSubmissionsCountForCoursesAsync(IEnumerable<int> courseIds);
 
         Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync();
         Task<int> SaveChangesAsync();

@@ -13,7 +13,7 @@
     .dash-greeting h1 { font-size: 22px; font-weight: 700; color: var(--c-text); margin: 0 0 4px; }
     .dash-greeting p { font-size: 13px; color: var(--c-muted); margin: 0; }
 
-    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .stat-card {
         background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px;
         padding: 18px; text-align: center;
@@ -53,7 +53,7 @@
     .btn-action:hover { background: var(--c-primary-hover); color: #fff; }
 
     @@media (max-width: 767px) {
-        .stats-row { grid-template-columns: 1fr; }
+        .stats-row { grid-template-columns: repeat(2, 1fr); }
         .dash-grid { grid-template-columns: 1fr; }
     }
 </style>
@@ -70,6 +70,10 @@
         <div class="stat-lbl">Courses</div>
     </div>
     <div class="stat-card">
+        <div class="stat-num" style="color: var(--c-success);">@Model.ActiveExamsCount</div>
+        <div class="stat-lbl">Active Now</div>
+    </div>
+    <div class="stat-card">
         <div class="stat-num" style="color: var(--c-text);">@Model.CompletedExams</div>
         <div class="stat-lbl">Exams Done</div>
     </div>
@@ -83,7 +87,7 @@
 <div class="dash-grid">
     <!-- Upcoming Exams -->
     <div class="dash-block">
-        <div class="dash-block-head">Upcoming Exams</div>
+        <div class="dash-block-head">Available & Upcoming Exams</div>
         <div class="dash-block-body">
             @if (!Model.UpcomingExams.Any())
             {
@@ -95,9 +99,19 @@
                 {
                     <div class="exam-row">
                         <div>
-                            <div class="exam-row-title">@exam.ExamTitle</div>
-                            <div class="exam-row-sub">@exam.CourseTitle · @exam.StartTime.ToLocalTime().ToString("MMM dd, hh:mm tt")</div>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                @if (exam.IsActiveNow)
+                                {
+                                    <span style="background:#d4edda;color:#155724;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;">🟢 Open Now</span>
+                                }
+                                <div class="exam-row-title">@exam.ExamTitle</div>
+                            </div>
+                            <div class="exam-row-sub">@exam.CourseTitle · @exam.StartTime.ToLocalTime().ToString("MMM dd, hh:mm tt") (@exam.DurationMinutes mins)</div>
                         </div>
+                        @if (exam.IsActiveNow)
+                        {
+                            <a href="@Url.Action("Rules", "Exam", new { area = "Student", examId = exam.ExamId })" class="btn-action">Take Exam</a>
+                        }
                     </div>
                 }
             }
@@ -122,7 +136,7 @@
                     <div class="exam-row">
                         <div>
                             <div class="exam-row-title">@result.ExamTitle</div>
-                            <div class="exam-row-sub">@result.CourseTitle</div>
+                            <div class="exam-row-sub">@result.CourseTitle @(result.SubmittedAt.HasValue ? " · " + result.SubmittedAt.Value.ToLocalTime().ToString("MMM dd") : "")</div>
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;">
                             @if (result.IsTerminated)

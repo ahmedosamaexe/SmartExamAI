@@ -36,6 +36,7 @@ namespace SmartExamAI.Services
 
             int distinctStudents = await _examRepository.GetDistinctStudentsCountForCoursesAsync(courseIds);
             int pendingGrading = await _examRepository.GetPendingGradingAnswersCountAsync(courseIds);
+            int totalSubmissions = await _examRepository.GetTotalSubmissionsCountForCoursesAsync(courseIds);
 
             var needsGradingSubmissions = await _examRepository.GetNeedsGradingSubmissionsAsync(courseIds);
             var needsGradingList = needsGradingSubmissions.Select(s => new NeedsGradingItem
@@ -47,15 +48,19 @@ namespace SmartExamAI.Services
                 SubmittedAt = s.SubmittedAt ?? DateTime.UtcNow
             }).ToList();
 
+            var now = DateTime.UtcNow;
             var upcomingList = allExams
-                .Where(e => e.IsPublished && DateTime.UtcNow < e.StartTime)
+                .Where(e => e.IsPublished && now <= e.EndTime)
                 .OrderBy(e => e.StartTime)
                 .Take(5)
                 .Select(e => new UpcomingExamItem
                 {
+                    ExamId = e.Id,
                     ExamTitle = e.Title,
                     CourseTitle = e.Course?.Title ?? string.Empty,
-                    StartTime = e.StartTime
+                    StartTime = e.StartTime,
+                    DurationMinutes = e.DurationMinutes,
+                    IsActive = now >= e.StartTime && now <= e.EndTime
                 }).ToList();
 
             var recentSubs = await _examRepository.GetRecentSubmissionsForCoursesAsync(courseIds, 5);
@@ -72,15 +77,30 @@ namespace SmartExamAI.Services
                 .Take(6)
                 .ToList();
 
+            var recentCoursesList = courses.Take(4).Select(c =>
+            {
+                var courseExams = allExams.Where(e => e.CourseId == c.Id).ToList();
+                return new TeacherCourseItemViewModel
+                {
+                    CourseId = c.Id,
+                    Title = c.Title,
+                    Tagline = c.Tagline ?? string.Empty,
+                    ExamsCount = courseExams.Count,
+                    ActiveExamsCount = courseExams.Count(e => e.IsPublished && e.IsActive())
+                };
+            }).ToList();
+
             return new TeacherDashboardViewModel
             {
                 TotalCourses = courses.Count,
                 ActiveExams = activeExams,
                 TotalStudents = distinctStudents,
+                TotalSubmissions = totalSubmissions,
                 PendingGrading = pendingGrading,
                 NeedsGradingList = needsGradingList,
                 UpcomingExams = upcomingList,
-                RecentActivity = combinedActivity
+                RecentActivity = combinedActivity,
+                RecentCourses = recentCoursesList
             };
         }
 
@@ -92,15 +112,19 @@ namespace SmartExamAI.Services
             var submissions = (await _examRepository.GetSubmissionsByStudentIdAsync(studentId)).ToList();
 
             var now = DateTime.UtcNow;
+            var takenExamIds = submissions.Where(s => s.SubmittedAt != null || s.IsTerminated).Select(s => s.ExamId).ToHashSet();
 
             var upcomingExams = publishedExams
-                .Where(e => now < e.StartTime)
+                .Where(e => now <= e.EndTime && !takenExamIds.Contains(e.Id))
+                .OrderBy(e => e.StartTime)
                 .Select(e => new StudentUpcomingExamItem
                 {
                     ExamId = e.Id,
                     ExamTitle = e.Title,
                     CourseTitle = e.Course?.Title ?? string.Empty,
-                    StartTime = e.StartTime
+                    StartTime = e.StartTime,
+                    DurationMinutes = e.DurationMinutes,
+                    IsActiveNow = now >= e.StartTime && now <= e.EndTime
                 }).ToList();
 
             var completedList = new List<RecentResultItem>();
@@ -120,6 +144,7 @@ namespace SmartExamAI.Services
                     CourseTitle = exam.Course?.Title ?? string.Empty,
                     TotalScore = score,
                     MaxScore = maxScore,
+                    SubmittedAt = sub.SubmittedAt,
                     ResultsPublished = exam.ResultsPublished,
                     IsTerminated = sub.IsTerminated,
                     HasPendingGrading = hasPending
@@ -134,6 +159,7 @@ namespace SmartExamAI.Services
             return new StudentDashboardViewModel
             {
                 EnrolledCourses = enrollments.Count(),
+                ActiveExamsCount = upcomingExams.Count(x => x.IsActiveNow),
                 CompletedExams = completedList.Count,
                 AverageScore = avgScore != null ? Math.Round(avgScore.Value, 1) : null,
                 UpcomingExams = upcomingExams,

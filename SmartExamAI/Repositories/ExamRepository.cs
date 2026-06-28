@@ -349,6 +349,14 @@ namespace SmartExamAI.Repositories
                 .CountAsync();
         }
 
+        public async Task<int> GetTotalSubmissionsCountForCoursesAsync(IEnumerable<int> courseIds)
+        {
+            return await _context.Submissions
+                .Include(s => s.Exam)
+                .Where(s => courseIds.Contains(s.Exam.CourseId) && s.SubmittedAt != null)
+                .CountAsync();
+        }
+
         public async Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync()
         {
             return await _context.Database.BeginTransactionAsync();

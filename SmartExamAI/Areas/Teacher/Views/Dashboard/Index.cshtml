@@ -10,7 +10,7 @@
     .dash-greeting h1 { font-size: 22px; font-weight: 700; color: var(--c-text); margin: 0 0 4px; }
     .dash-greeting p { font-size: 13px; color: var(--c-muted); margin: 0; }
 
-    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .stat-card {
         background: var(--c-card); border: 1px solid var(--c-border); border-radius: 10px;
         padding: 18px; text-align: center;
@@ -86,6 +86,10 @@
         <div class="stat-lbl">Active Exams</div>
     </div>
     <div class="stat-card">
+        <div class="stat-num" style="color: #6366F1;">@Model.TotalSubmissions</div>
+        <div class="stat-lbl">Submissions</div>
+    </div>
+    <div class="stat-card">
         <div class="stat-num" style="color: var(--c-warning);">@Model.PendingGrading</div>
         <div class="stat-lbl">To Grade</div>
     </div>
@@ -102,26 +106,20 @@
                 <a href="@Url.Action("Create", "Courses", new { area = "Teacher" })" class="btn-action">New Course</a>
             </div>
             <div class="dash-block-body">
-                @{
-                    var recentCourses = ViewData["RecentCourses"] as List<SmartExamAI.Models.Course> ?? new List<SmartExamAI.Models.Course>();
-                }
-                @if (!recentCourses.Any())
+                @if (!Model.RecentCourses.Any())
                 {
                     <div class="empty-state" style="padding: 1rem;">No courses yet</div>
                 }
                 else
                 {
-                    @foreach (var course in recentCourses)
+                    @foreach (var course in Model.RecentCourses)
                     {
                         <div class="item-row">
                             <div>
                                 <div class="item-title">@course.Title</div>
-                                @if (!string.IsNullOrWhiteSpace(course.Tagline))
-                                {
-                                    <div class="item-sub">@course.Tagline</div>
-                                }
+                                <div class="item-sub">@(string.IsNullOrWhiteSpace(course.Tagline) ? "" : course.Tagline + " · ")@course.ExamsCount Exams (@course.ActiveExamsCount Active)</div>
                             </div>
-                            <a href="/Teacher/Courses/@course.Id" class="btn-action-outline">Open</a>
+                            <a href="/Teacher/Courses/@course.CourseId" class="btn-action-outline">Open</a>
                         </div>
                     }
                 }
@@ -159,8 +157,39 @@
         </div>
     </div>
 
-    <!-- Right: Recent Activity -->
+    <!-- Right: Active/Upcoming + Recent Activity -->
     <div>
+        <!-- Active & Upcoming Exams -->
+        <div class="dash-block" style="margin-bottom: 20px;">
+            <div class="dash-block-head">Active & Upcoming Exams</div>
+            <div class="dash-block-body">
+                @if (!Model.UpcomingExams.Any())
+                {
+                    <div class="empty-state" style="padding: 1rem;">No scheduled exams</div>
+                }
+                else
+                {
+                    @foreach (var exam in Model.UpcomingExams)
+                    {
+                        <div class="item-row">
+                            <div>
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    @if (exam.IsActive)
+                                    {
+                                        <span style="background:#d4edda;color:#155724;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;">🟢 Active Now</span>
+                                    }
+                                    <div class="item-title">@exam.ExamTitle</div>
+                                </div>
+                                <div class="item-sub">@exam.CourseTitle · @exam.StartTime.ToLocalTime().ToString("MMM dd, hh:mm tt") (@exam.DurationMinutes mins)</div>
+                            </div>
+                            <a href="/Teacher/Exams/Details/@exam.ExamId" class="btn-action-outline">View</a>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
         <div class="dash-block">
             <div class="dash-block-head">Recent Activity</div>
             <div class="dash-block-body">
