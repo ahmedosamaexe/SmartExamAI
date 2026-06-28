@@ -1,144 +1,96 @@
-# SmartExamAI
+# SmartExamAI: Web-Based Proctored Examination System
 
-A modern, full-featured online examination platform built with ASP.NET Core. SmartExamAI enables teachers to create courses, design exams, and grade student submissions — while students can enroll, take proctored exams, and view their results — all within a clean, role-based interface.
+## Overview
+SmartExamAI is a web-based examination management platform developed using ASP.NET Core MVC and Entity Framework Core. The system provides role-based administration for instructors and students, facilitating automated course management, assessment creation, asynchronous grading, and real-time integrity monitoring. Designed to support academic assessment workflows, the platform enforces browser proctoring protocols and secure authentication mechanisms.
 
-![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)
-![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-MVC-0A7C6E)
-![SQL Server](https://img.shields.io/badge/SQL%20Server-EF%20Core-CC2927?logo=microsoftsqlserver&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue)
+## Core Capabilities
 
----
+### Instructor Module
+- Course Administration: Instructors can create, modify, and archive courses. The module supports batch student enrollment via CSV file processing and automatic generation of unique access codes.
+- Assessment Design: Supports multi-stage exam configuration with multiple-choice and constructed-response question types. Instructors can define duration constraints, scheduling windows, and item randomization parameters.
+- Evaluation and Grading: Facilitates automated evaluation for objective items and provides a dedicated evaluation dashboard for grading constructed responses with personalized feedback.
+- Analytics and Reporting: Aggregates assessment performance data to calculate statistical metrics, including score distributions and pass rates. Results can be exported to Excel spreadsheets via the EPPlus library.
+- Integrity Monitoring: Records proctoring infractions in real time during active examination sessions, logging specific browser behavioral violations per candidate.
 
-## ✨ Features
+### Student Module
+- Course Enrollment: Allows participants to register for active courses using validated enrollment codes provided by instructors.
+- Secure Examination Interface: Presents assessment items sequentially to maintain focus. Built-in client-side proctoring detects browser tab switching, enforces full-screen execution, and terminates the assessment if infraction thresholds are exceeded.
+- Session Management: Features an active session countdown timer and enforces automatic submission upon time expiration.
+- State Persistence: Synchronizes and records candidate responses asynchronously on the server during session navigation to prevent data loss.
+- Academic Records: Grants access to finalized evaluations, scores, and instructor feedback upon formal publication.
 
-### 👩‍🏫 Teacher Module
-- **Course Management** — Create, edit, and delete courses with auto-generated enrollment codes and optional CSV bulk enrollment.
-- **Exam Builder** — Multi-step exam creation with MCQ and short-answer questions, configurable duration, scheduling, and randomization.
-- **Grading Dashboard** — Individual and bulk grading workflows for short-answer questions, with teacher feedback per answer.
-- **Results & Analytics** — Aggregate performance metrics (average scores, pass rates), results publishing, and Excel export via EPPlus.
-- **Violation Monitor** — Real-time proctoring violation tracking per student per exam.
+### Security and Access Control
+- Role-Based Access Control (RBAC): Implements ASP.NET Core Identity to establish distinct privileges for Instructor and Student accounts.
+- Policy Enforcement: Enforces mandatory password modification upon initial authentication using global authorization filters.
+- Request Verification: Secures all state-changing HTTP endpoints against Cross-Site Request Forgery (CSRF) via anti-forgery token validation.
+- Centralized Exception Handling: Utilizes global middleware to intercept runtime errors, maintain execution logs, and ensure controlled failure recovery.
 
-### 🎓 Student Module
-- **Course Enrollment** — Join courses using teacher-provided enrollment codes.
-- **Proctored Exams** — One-question-per-page exam interface with tab-switch detection, fullscreen enforcement, and automatic termination on violation threshold.
-- **Live Timer** — Countdown timer with color-coded urgency transitions (teal → amber → coral).
-- **Auto-Save** — Answers are saved server-side on every navigation between questions.
-- **Results View** — Detailed submission results once published by the teacher.
+## Software Architecture and Technologies
 
-### 🔐 Authentication & Security
-- **ASP.NET Core Identity** — Role-based access (Teacher / Student) with cookie authentication.
-- **First-Login Password Change** — Enforced via a global action filter.
-- **Anti-Forgery Tokens** — All POST actions are CSRF-protected.
-- **Global Exception Middleware** — Centralized error handling.
+| Component | Technology |
+|---|---|
+| Application Framework | ASP.NET Core 10.0 (MVC) |
+| Programming Language | C# 13 |
+| Object-Relational Mapping | Entity Framework Core 10 |
+| Database Management System | Microsoft SQL Server |
+| Identity & Authentication | ASP.NET Core Identity |
+| Frontend Architecture | Razor Views, Bootstrap 5, Custom CSS/JavaScript |
+| Document Export Engine | EPPlus 8.x |
 
-### 🎨 UI/UX
-- **Teal & Orange Design System** — Custom CSS variable-driven theme with semantic color tokens.
-- **Responsive Sidebar Layout** — Collapsible sidebar with role-aware navigation.
-- **Toast Notifications** — Global success/error feedback system powered by `TempData`.
-- **Loading States** — Spinner overlays on async buttons to prevent double submissions.
-- **Password Strength Meter** — Real-time visual strength indicator on registration and password change forms.
-- **Breadcrumb Navigation** — Consistent breadcrumbs across all Teacher and Student pages.
-- **Avatar Dropdown** — Profile menu with initials avatar in the topbar.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | ASP.NET Core 10.0 (MVC) |
-| **Language** | C# 13 |
-| **Database** | SQL Server + Entity Framework Core 10 |
-| **Identity** | ASP.NET Core Identity |
-| **Frontend** | Razor Views, Bootstrap 5, Vanilla CSS & JS |
-| **Export** | EPPlus 8.x (Excel generation) |
-
----
-
-## 📁 Project Structure
+## Repository Structure
 
 ```
 SmartExamAI/
 ├── Areas/
-│   ├── Student/          # Student controllers & views
-│   │   ├── Controllers/  # Dashboard, Courses, Exam
-│   │   └── Views/
-│   └── Teacher/          # Teacher controllers & views
-│       ├── Controllers/  # Dashboard, Courses, Exams, Results
-│       └── Views/
-├── Controllers/          # Account (Login, Register, Profile)
-├── Data/                 # AppDbContext, seed logic
-├── Filters/              # ForcePasswordChangeFilter
-├── Helpers/              # ExamStatusHelper
-├── Infrastructure/       # CustomClaimsPrincipal, GlobalExceptionMiddleware
-├── Models/               # EF Core entities (Course, Exam, Question, etc.)
-├── ViewModels/           # Teacher & Student view models
-├── Views/                # Shared layouts, Account views
-└── wwwroot/
-    ├── css/site.css      # Design system & utility classes
-    └── js/proctoring.js  # Client-side proctoring engine
+│   ├── Student/          # Student presentation layer (Controllers and Views)
+│   └── Teacher/          # Instructor presentation layer (Controllers and Views)
+├── Controllers/          # Authentication and user account management
+├── Data/                 # Database context definitions and initial data seeding
+├── Filters/              # Action filters including password compliance enforcement
+├── Helpers/              # Utility classes for evaluation and status tracking
+├── Infrastructure/       # Custom middleware and security extensions
+├── Models/               # Domain entities and relational database schema
+├── ViewModels/           # Data transfer objects for presentation layer binding
+├── Views/                # Shared layout definitions and core account views
+└── wwwroot/              # Static web assets (stylesheets, scripts, libraries)
 ```
 
----
-
-## 🚀 Getting Started
+## System Requirements and Installation
 
 ### Prerequisites
+- .NET 10.0 SDK or later
+- Microsoft SQL Server (LocalDB or Enterprise instance)
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [SQL Server](https://www.microsoft.com/en-us/sql-server) (LocalDB, Express, or full)
+### Installation Procedure
 
-### Setup
+1. Repository Cloning:
+```bash
+git clone https://github.com/ahmedosamaexe/SmartExamAI.git
+cd SmartExamAI/SmartExamAI
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ahmedosamaexe/SmartExamAI.git
-   cd SmartExamAI/SmartExamAI
-   ```
+2. Database Configuration:
+Configure the database connection string within `appsettings.json`:
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=.;Database=SmartExamAI;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
 
-2. **Configure the database connection**
+3. Schema Migration:
+Apply Entity Framework Core migrations to initialize the relational database schema:
+```bash
+dotnet ef database update
+```
 
-   Edit `appsettings.json` and set your connection string:
-   ```json
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Server=.;Database=SmartExamAI;Trusted_Connection=True;TrustServerCertificate=True;"
-     }
-   }
-   ```
+4. Application Execution:
+Launch the local web server:
+```bash
+dotnet run
+```
+Access the application interface by navigating to `https://localhost:5097` in a web browser.
 
-3. **Apply migrations**
-   ```bash
-   dotnet ef database update
-   ```
-
-4. **Run the application**
-   ```bash
-   dotnet run
-   ```
-
-5. **Open in browser**
-
-   Navigate to `https://localhost:5097` (or the port shown in terminal).
-
----
-
-## 🎨 Design System
-
-The UI uses a custom Teal & Orange color palette defined as CSS variables:
-
-| Token | Value | Purpose |
-|-------|-------|---------|
-| `--c-primary` | `#0A7C6E` | Primary actions, links, sidebar |
-| `--c-primary-hover` | `#085F55` | Hover states |
-| `--c-danger` | `#FF6B35` | Destructive actions, alerts |
-| `--c-warning` | `#F59E0B` | Cautions, pending states |
-| `--c-success` | `#0A7C6E` | Confirmations, positive states |
-| `--c-text` | `#0D2B27` | Primary text |
-| `--c-muted` | `#6B7280` | Secondary text, labels |
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
+## License
+This project is distributed under the MIT License.
