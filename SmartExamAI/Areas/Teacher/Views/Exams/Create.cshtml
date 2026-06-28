@@ -41,6 +41,11 @@
     .field-input:focus { border-color: var(--c-primary); }
     .field-readonly { background: var(--c-page-bg); color: var(--c-muted); cursor: default; }
     .field-suffix { display: flex; align-items: center; gap: 0; }
+
+    .duration-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .dur-pill { padding: 4px 14px; border: 1px solid var(--c-border); border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--c-text); background: var(--c-card); cursor: pointer; transition: all .15s; }
+    .dur-pill:hover { border-color: var(--c-primary); }
+    .dur-pill.active { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
     .field-suffix .field-input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
     .field-suffix-label { padding: 8px 12px; border: 1px solid var(--c-border); border-left: none; border-radius: 0 7px 7px 0; font-size: 12px; color: var(--c-muted); background: var(--c-page-bg); white-space: nowrap; }
 
@@ -109,6 +114,14 @@
             </div>
             <div>
                 <label class="field-label field-required">Duration</label>
+                <div class="duration-pills">
+                    <span class="dur-pill" data-minutes="15">15 min</span>
+                    <span class="dur-pill" data-minutes="30">30 min</span>
+                    <span class="dur-pill" data-minutes="45">45 min</span>
+                    <span class="dur-pill" data-minutes="60">60 min</span>
+                    <span class="dur-pill" data-minutes="90">90 min</span>
+                    <span class="dur-pill" data-minutes="120">120 min</span>
+                </div>
                 <div class="field-suffix">
                     <input asp-for="DurationMinutes" class="field-input" id="durationInput" type="number" min="1" max="480" />
                     <span class="field-suffix-label">minutes</span>
@@ -225,7 +238,7 @@
     const addForm = document.getElementById('addQuestionForm');
     const typeSelect = document.getElementById('questionTypeSelect');
 
-    flatpickr(startTimeInput, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true });
+    flatpickr(startTimeInput, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true, minuteIncrement: 5 });
 
     function token() { return document.querySelector('input[name="__RequestVerificationToken"]').value; }
     function showError(el, msg) { el.textContent = msg; el.style.display = 'block'; }
@@ -347,6 +360,22 @@
     document.getElementById('saveExamButton').addEventListener('click', function() {
         ensureExamSaved().then(function(ok) { if (ok) window.location.href = '/Teacher/Exams/Details/' + currentExamIdInput.value; });
     });
+
+    // --- Duration pills ---
+    function updatePills() {
+        var val = durationInput.value;
+        document.querySelectorAll('.dur-pill').forEach(function(p) {
+            p.classList.toggle('active', p.getAttribute('data-minutes') === val);
+        });
+    }
+    document.querySelectorAll('.dur-pill').forEach(function(pill) {
+        pill.addEventListener('click', function() {
+            durationInput.value = pill.getAttribute('data-minutes');
+            updatePills();
+        });
+    });
+    durationInput.addEventListener('input', updatePills);
+    updatePills();
 
     updateEmptyState();
 </script>

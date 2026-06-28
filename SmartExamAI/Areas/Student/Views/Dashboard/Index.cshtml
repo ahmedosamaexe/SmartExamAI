@@ -5,6 +5,7 @@
     var avgColor = Model.AverageScore.HasValue && Model.AverageScore.Value >= 60 ? "var(--c-success)" : "var(--c-danger)";
     if (!Model.AverageScore.HasValue) avgColor = "var(--c-muted)";
     var studentName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Student";
+    var firstName = studentName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? studentName;
 }
 
 <style>
@@ -157,8 +158,8 @@
 </style>
 
 <div class="dashboard-header">
-    <h1 class="dashboard-title">Dashboard</h1>
-    <p class="dashboard-subtitle">Welcome back, @studentName</p>
+    <h1 class="dashboard-title">Hi, @firstName! 👋</h1>
+    <p class="dashboard-subtitle">Here's your academic overview</p>
 </div>
 
 <div class="moodle-grid">
@@ -180,9 +181,6 @@
                 else
                 {
                     <div class="course-overview-grid">
-                        <!-- We don't have course list in StudentDashboardViewModel, so we will use a generic message or load via ajax. 
-                             Wait, the user wants the dashboard to differ completely.
-                             Instead of courses, let's highlight Recent Results here if we don't have course list in ViewModel. -->
                         @if (!Model.RecentResults.Any())
                         {
                             <div class="empty-state">No recent results found.</div>

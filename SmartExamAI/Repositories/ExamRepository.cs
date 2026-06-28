@@ -157,10 +157,12 @@ namespace SmartExamAI.Repositories
         public async Task<Submission?> GetSubmissionWithAnswersAsync(int id)
         {
             return await _context.Submissions
-                .AsNoTracking()
                 .Include(s => s.Student)
                 .Include(s => s.Exam)
                     .ThenInclude(e => e.Course)
+                .Include(s => s.Exam)
+                    .ThenInclude(e => e.Questions)
+                        .ThenInclude(q => q.Options)
                 .Include(s => s.Answers)
                     .ThenInclude(a => a.Question)
                         .ThenInclude(q => q.Options)

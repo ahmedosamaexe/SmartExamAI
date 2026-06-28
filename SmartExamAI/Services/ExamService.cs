@@ -734,7 +734,7 @@ namespace SmartExamAI.Services
 
             foreach (var answer in submission.Answers)
             {
-                var question = submission.Exam.Questions.FirstOrDefault(q => q.Id == answer.QuestionId);
+                var question = answer.Question;
                 if (question == null) continue;
 
                 submittedAnswers.TryGetValue(question.Id, out var submittedAnswer);

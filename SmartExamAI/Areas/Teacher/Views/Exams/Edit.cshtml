@@ -130,7 +130,7 @@
     var startTimeInput = document.getElementById('startTimeInput');
     var durationInput = document.getElementById('durationInput');
 
-    flatpickr(startTimeInput, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true });
+    flatpickr(startTimeInput, { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: true, minuteIncrement: 5 });
 
     function updatePills() {
         var val = durationInput.value;
